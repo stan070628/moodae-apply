@@ -1,0 +1,19 @@
+# 환경 변수 (API Key 절대 커밋 금지)
+.env
+*.env
+
+# Streamlit 로컬 설정
+.streamlit/secrets.toml
+
+# 버전 데이터 (로컬 전용 - 클라우드에선 세션 휘발)
+data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# macOS
+.DS_Store
