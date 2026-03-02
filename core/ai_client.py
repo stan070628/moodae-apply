@@ -3,7 +3,7 @@ import google.generativeai as genai
 from openai import OpenAI
 import anthropic
 
-from core.prompts import SYSTEM_PROMPT, SECTION_KEYS, SECTION_NAMES
+from core.prompts.apply_prompts import SYSTEM_PROMPT, SECTION_KEYS, SECTION_NAMES
 from utils.text_parser import parse_json_from_text
 
 # ═══════════════════════════════════════════════════
@@ -11,7 +11,7 @@ from utils.text_parser import parse_json_from_text
 # ═══════════════════════════════════════════════════
 def get_model(api_key: str, pro: bool = False):
     genai.configure(api_key=api_key)
-    model_name = "gemini-2.0-flash" if pro else "gemini-2.0-flash"
+    model_name = "gemini-1.5-pro-latest" if pro else "gemini-1.5-flash-latest"
     return genai.GenerativeModel(model_name)
 
 def ai_update_sections(api_key: str, current_plan: dict, memo: str, target_sections: list | None = None) -> dict:

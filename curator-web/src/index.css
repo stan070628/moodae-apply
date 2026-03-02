@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-500: #667eea;
+  --color-primary-600: #764ba2;
+  --color-bg-dark: #1a1a2e;
+  --color-bg-card: #0f0f23;
+}
+
+body {
+  margin: 0;
+  font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg-dark);
+  color: white;
+  min-height: 100vh;
+}
