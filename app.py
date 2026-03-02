@@ -1,15 +1,22 @@
 """
 무대소환(Stage Summon) 사업계획서 AI 관리 시스템
-- Google Gemini API 기반 자동 업데이트 & 예비 심사
+- Streamlit Entrypoint
 """
 
 import streamlit as st
 import json
 import os
-import re
 from datetime import datetime
-from pathlib import Path
-import google.generativeai as genai
+
+from core.prompts import SECTION_KEYS, SECTION_NAMES
+from data.repository import load_versions, save_version, get_or_create_latest, bump_version
+from utils.text_parser import apply_diff_update
+
+from core.ai_client import (
+    ai_update_sections, ai_preliminary_review, ai_update_sections_diff,
+    ai_update_sections_openai, ai_preliminary_review_openai, ai_update_sections_diff_openai,
+    ai_update_sections_claude, ai_preliminary_review_claude, ai_update_sections_diff_claude
+)
 
 # ═══════════════════════════════════════════════════
 # 페이지 설정
@@ -20,377 +27,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
-# ═══════════════════════════════════════════════════
-# 상수 / 데이터 구조
-# ═══════════════════════════════════════════════════
-VERSIONS_DIR = Path("data/versions")
-VERSIONS_DIR.mkdir(parents=True, exist_ok=True)
-
-SECTION_KEYS = ["section1", "section2", "section3", "section4", "section5", "section6"]
-
-SECTION_NAMES = {
-    "section1": "1. 사업의 필요성",
-    "section2": "2. 독창성 및 차별성",
-    "section3": "3. 수익 모델 (BM)",
-    "section4": "4. 리스크 관리",
-    "section5": "5. 성장 로드맵",
-    "section6": "6. 추진 일정",
-}
-
-SYSTEM_PROMPT = """[Role & Objective]
-당신은 정부지원사업 심사위원이자 전문 스타트업 컨설턴트입니다.
-사용자가 '무대소환(Stage Summon)' 사업계획서와 관련된 새로운 정보(데이터, 성과, 시장 동향 등)를 입력하면,
-기존 6가지 섹션(사업의 필요성, 독창성, 수익모델, 리스크 관리, 성장 로드맵, 추진 일정) 중
-가장 적절한 섹션을 찾아 내용을 업데이트하고 고도화하십시오.
-
-[서비스 소개]
-무대소환(Stage Summon)은 인디 예술인과 공연 기획자를 연결하는 역경매 기반 공연 매칭 플랫폼입니다.
-
-[Validation Rules: 2026 예술분야 창업지원사업 필수 조건]
-문서를 업데이트할 때 다음의 결격 사유나 필수 요건이 훼손되지 않도록 검증하고, 위반 시 반드시 경고를 출력하십시오.
-
-1. 일회성 사업 배제: 단순한 1회성 공연·행사 기획이 아닌, '플랫폼 수수료·구독·데이터 판매' 등
-   반복 가능하고 지속적인 수익 구조(BM)임을 강조해야 합니다.
-
-2. 예술 생태계 기여도: 기술(역경매, AI) 중심의 설명에 매몰되지 않도록,
-   이 사업이 '인디 예술인의 경제적 자생력'과 '예술 소비 시장 확대'에 어떻게 기여하는지 명시해야 합니다.
-
-3. 자금 운용의 현실성: 총사업비의 20%를 기업 자비(자기부담금)로 편성해야 합니다.
-   재무 계획 입력 시 이 비율이 지켜졌는지 확인하십시오.
-
-4. 연속 성장(Scale-up) 로드맵: 해당 지원사업은 성과 달성 시 최대 3회(예비→초기→도약) 연속 지원 가능합니다.
-   로드맵 업데이트 시 향후 3년의 스케일업 KPI가 반드시 포함되도록 유도하십시오."""
-
-# ═══════════════════════════════════════════════════
-# 초기 사업계획서 내용 (프리셋)
-# ═══════════════════════════════════════════════════
-INITIAL_SECTIONS = {
-    "section1": """\
-## 1. 사업의 필요성
-
-### 시장 현황 및 문제점
-국내 인디 음악·공연 시장은 연간 약 1조 원 규모로 성장하였으나, 인디 예술인의 97%는
-공연 정보 비대칭 문제로 인해 실질적인 수익 창출에 어려움을 겪고 있습니다.
-
-| 이해관계자 | 핵심 문제 |
-|-----------|---------|
-| 공연 기획자 | 적합한 아티스트 검색에 평균 2~3주 소요, 섭외 실패율 40% 이상 |
-| 인디 아티스트 | 공연 정보 접근 채널 부재 → 월평균 공연 수입 30만 원 미만 (전체의 78%) |
-| 공연 소비자 | 개성 있는 인디 공연 검색 경로 없음 → 대형 기획사 공연으로 소비 집중 |
-
-### 정책적 배경
-2026년 문화체육관광부는 '예술인 경제적 자생력 강화' 정책 기조 하에,
-디지털 플랫폼을 통한 예술 유통 구조 혁신 과제를 핵심 지원 사업으로 선정하였습니다.
-
-### 무대소환의 솔루션
-역경매 방식의 공연 매칭 플랫폼 '무대소환'은 위 구조적 문제를 해결하는
-**지속가능한 디지털 유통 인프라**를 제공합니다.
-플랫폼을 통해 인디 예술인의 경제적 자생력을 높이고, 예술 소비 시장을 확대합니다.""",
-
-    "section2": """\
-## 2. 독창성 및 차별성
-
-### 핵심 기술: 역경매(Reverse Auction) 매칭 시스템
-기존 플랫폼이 아티스트가 직접 홍보해야 하는 '아웃바운드' 방식인 반면,
-무대소환은 공연 기획자가 조건을 제시하면 아티스트가 지원하는 **'인바운드 역경매'** 구조입니다.
-
-| 구분 | 기존 플랫폼 | 무대소환 |
-|------|------------|---------|
-| 매칭 방식 | 아티스트 직접 홍보 | 역경매 기반 자동 매칭 |
-| 정보 투명성 | 비공개 협상 | 공개 조건 경쟁 |
-| AI 활용 | 없음 | 장르·분위기·예산 기반 AI 추천 |
-| 수익 구조 | 단순 광고 | 플랫폼 수수료 + 구독 + 데이터 판매 |
-
-### 예술 생태계 기여
-- **인디 예술인 자생력**: 플랫폼 매칭을 통해 안정적인 공연 수입 경로 확보
-- **예술 소비 시장 확대**: 취향 기반 AI 추천으로 새로운 인디 팬덤 형성 지원
-
-### 특허 및 IP 전략
-- 역경매 매칭 알고리즘 특허 출원 예정
-- 아티스트 포트폴리오 AI 분석 기술 자체 개발""",
-
-    "section3": """\
-## 3. 수익 모델 (BM)
-
-### 지속 가능한 멀티 레이어 수익 구조
-무대소환의 수익 모델은 단순 중개 수수료를 넘어 **3단계 레이어 BM**으로 설계되었습니다.
-
-**Layer 1. 거래 수수료 (핵심 BM)**
-- 공연 성사 시 총 계약금의 10~15% 수수료 부과
-- 예상 수수료 단가: 건당 15만~50만 원
-- 월 목표 거래 건수: 1년차 50건 → 3년차 500건
-
-**Layer 2. 구독 서비스 (Pro 플랜)**
-- 기획자 Pro: 월 9,900원 (우선 매칭, 분석 리포트 제공)
-- 아티스트 Pro: 월 4,900원 (노출 우선순위, 포트폴리오 고도화)
-
-**Layer 3. 데이터 B2B 판매**
-- 지역별·장르별 공연 수요 데이터를 공연장·지자체에 판매
-- 예상 단가: 연간 리포트 500만 원/건
-
-### 자금 운용 계획 (2026년 기초단계)
-| 항목 | 금액 | 비율 |
-|------|------|------|
-| 정부 지원금 | 40,000,000원 | 80% |
-| **자기부담금** | **10,000,000원** | **20% ✅** |
-| 총 사업비 | 50,000,000원 | 100% |
-
-> ✅ 자기부담금 20% 규정 준수 확인됨""",
-
-    "section4": """\
-## 4. 리스크 관리
-
-### 주요 리스크 및 대응 전략
-
-**① 초기 공급 부족 리스크 (콜드스타트 문제)**
-- 리스크: 플랫폼 초기 아티스트/기획자 수 부족으로 매칭 실패율 증가
-- 대응: 사전 파트너십 구두 협의를 통해 런칭 전 아티스트 50팀, 기획자 20개사 확보
-- 목표: 베타 서비스 3개월 내 거래 성사 30건 달성
-
-**② 수수료 저항 리스크**
-- 리스크: 기존 아날로그 거래 방식 선호로 인한 플랫폼 이탈
-- 대응: 초기 6개월 수수료 50% 감면 프로모션, 부가 서비스 번들 제공
-
-**③ 경쟁 플랫폼 진입 리스크**
-- 리스크: 대형 플랫폼의 유사 서비스 출시
-- 대응: 역경매 특허 보호 + 아티스트 포트폴리오 데이터 선점 전략
-
-**④ 규제 리스크**
-- 리스크: 공연 중개업 관련 법적 규제 변화
-- 대응: 문화체육관광부 공연예술중개업 등록 선제적 완료""",
-
-    "section5": """\
-## 5. 성장 로드맵
-
-### 3개년 스케일업 전략 (예비→초기→도약)
-
-**Phase 1. 예비창업 단계 (2026년)**
-- 목표: MVP 개발 및 베타 서비스 출시
-- KPI:
-  - 등록 아티스트 100팀 확보
-  - 월간 공연 매칭 30건 달성
-  - 베타 유저 만족도 4.0/5.0 이상
-  - 누적 거래액 3,000만 원
-- 핵심 활동: 홍대·이태원 인디씬 파트너십 구축, 플랫폼 MVP 개발
-
-**Phase 2. 초기창업 단계 (2027년)**
-- 목표: 서비스 고도화 및 수도권 확장
-- KPI:
-  - 등록 아티스트 500팀 / 기획자 100개사
-  - 월간 공연 매칭 150건
-  - 월 매출 3,000만 원 달성
-  - 시리즈 A 투자 유치 준비
-- 핵심 활동: AI 추천 알고리즘 고도화, Pro 구독 서비스 출시
-
-**Phase 3. 도약 단계 (2028년)**
-- 목표: 전국 확장 및 해외 시장 진출 준비
-- KPI:
-  - 전국 5개 도시 서비스 확장
-  - 누적 공연 매칭 2,000건
-  - 연 매출 15억 원 달성
-  - 동남아시아 1개국 파일럿 런칭
-- 핵심 활동: 글로벌 인디 씬 네트워크 구축, 데이터 B2B 사업 본격화""",
-
-    "section6": """\
-## 6. 추진 일정
-
-### 2026년 월별 세부 계획
-
-| 기간 | 주요 마일스톤 | 담당 |
-|------|-------------|------|
-| 2026.01~02 | 팀 구성 완료, 기술 스택 확정 | 전체 |
-| 2026.03~04 | MVP 핵심 기능 개발 (매칭 엔진, 프로필) | 개발팀 |
-| 2026.05 | 베타 파트너 아티스트 20팀 온보딩 | 사업팀 |
-| 2026.06 | 클로즈드 베타 테스트 (50명) | 전체 |
-| 2026.07~08 | 피드백 반영, UX 개선 | 개발팀 |
-| 2026.09 | 공개 베타 서비스 출시 | 전체 |
-| 2026.10~11 | 수수료 과금 시스템 활성화 | 사업팀 |
-| 2026.12 | 1년차 성과 평가, 초기창업 신청 준비 | 전체 |
-
-### 파트너십 현황
-- 협의 진행 중: 홍대 인디 공연장 5개소
-- MOU 추진 예정: 인디 레이블 3개사
-
-### 정부 지원사업 신청 일정
-- 2026년 5월: 기초단계 신청 (현재 목표)
-- 2027년 초: 초기창업 단계 신청 예정""",
-}
-
-
-# ═══════════════════════════════════════════════════
-# 유틸리티 함수
-# ═══════════════════════════════════════════════════
-
-def load_versions() -> list[dict]:
-    """저장된 모든 버전을 버전 번호 순으로 로드"""
-    versions = []
-    for f in sorted(VERSIONS_DIR.glob("v*.json")):
-        try:
-            with open(f, encoding="utf-8") as fp:
-                versions.append(json.load(fp))
-        except Exception:
-            pass
-    return versions
-
-
-def save_version(plan: dict):
-    """버전 JSON 저장"""
-    ver = plan["version"].replace(".", "_")
-    path = VERSIONS_DIR / f"v{ver}.json"
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(plan, f, ensure_ascii=False, indent=2)
-
-
-def get_or_create_latest() -> dict:
-    """최신 버전 반환; 없으면 초기 버전 생성"""
-    versions = load_versions()
-    if versions:
-        return versions[-1]
-    plan = _make_initial_plan()
-    save_version(plan)
-    return plan
-
-
-def _make_initial_plan() -> dict:
-    now = datetime.now().isoformat()
-    return {
-        "version": "1.0",
-        "label": "기초단계 신청용 (초안)",
-        "title": "무대소환(Stage Summon) 사업계획서",
-        "created_at": now,
-        "updated_at": now,
-        "change_log": [],
-        "sections": {k: v for k, v in INITIAL_SECTIONS.items()},
-    }
-
-
-def bump_version(ver: str, major: bool = False) -> str:
-    parts = ver.split(".")
-    mj, mn = int(parts[0]), int(parts[1])
-    if major:
-        return f"{mj + 1}.0"
-    return f"{mj}.{mn + 1}"
-
-
-def _strip_json(text: str) -> str:
-    """AI 응답에서 순수 JSON만 추출"""
-    text = text.strip()
-    # ```json ... ``` 블록 제거
-    m = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", text)
-    if m:
-        return m.group(1).strip()
-    return text
-
-
-# ═══════════════════════════════════════════════════
-# Gemini API 함수
-# ═══════════════════════════════════════════════════
-
-def get_model(api_key: str, pro: bool = False):
-    genai.configure(api_key=api_key)
-    model_name = "gemini-1.5-pro" if pro else "gemini-1.5-flash"
-    return genai.GenerativeModel(model_name)
-
-
-def ai_update_sections(api_key: str, current_plan: dict, memo: str, target_sections: list | None = None) -> dict:
-    """
-    메모를 분석해 관련 섹션을 업데이트.
-    Returns dict with keys: target_sections, reason, updates, summary, reviewer_comment, warnings
-    """
-    model = get_model(api_key)
-
-    sections_summary = "\n\n".join([
-        f"### {SECTION_NAMES[k]}\n{current_plan['sections'].get(k, '')[:400]}..."
-        for k in SECTION_KEYS
-    ])
-
-    scope_note = ""
-    if target_sections:
-        names = [SECTION_NAMES[s] for s in target_sections]
-        scope_note = f"\n\n[중요] 반드시 아래 섹션만 업데이트하세요: {', '.join(names)}"
-
-    prompt = f"""{SYSTEM_PROMPT}
-
----
-현재 사업계획서 각 섹션 요약:
-{sections_summary}
----
-사용자 입력 메모:{scope_note}
-{memo}
----
-
-위 메모를 분석하여 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록, 설명 없이 순수 JSON만):
-
-{{
-  "target_sections": ["section1"],
-  "reason": "이 메모가 해당 섹션에 영향을 주는 이유 (1~2문장)",
-  "updates": {{
-    "section1": "업데이트된 전체 섹션 내용 (마크다운 형식 유지)"
-  }},
-  "summary": "3줄 이내 변경 요약",
-  "reviewer_comment": "심사위원 관점의 추가 보완 제안",
-  "warnings": ["검증 위반 사항 (없으면 빈 배열)"]
-}}"""
-
-    resp = model.generate_content(prompt)
-    return json.loads(_strip_json(resp.text))
-
-
-def ai_preliminary_review(api_key: str, current_plan: dict) -> dict:
-    """
-    전체 사업계획서를 심사 기준으로 예비 심사.
-    Returns dict with scoring info.
-    """
-    model = get_model(api_key, pro=True)  # 심사는 Pro 모델 사용
-
-    full_content = "\n\n---\n\n".join([
-        f"# {SECTION_NAMES[k]}\n\n{current_plan['sections'].get(k, '')}"
-        for k in SECTION_KEYS
-    ])
-
-    prompt = f"""{SYSTEM_PROMPT}
-
----
-아래 사업계획서를 2026 예술분야 창업지원사업 심사 기준으로 예비 심사하세요.
-
-{full_content}
----
-
-다음 JSON 형식으로만 응답하세요 (순수 JSON):
-
-{{
-  "overall_score": 75,
-  "grade": "B+",
-  "overall_comment": "전체적인 평가 (2~3문장)",
-  "section_reviews": {{
-    "section1": {{
-      "score": 80,
-      "strengths": ["강점 1", "강점 2"],
-      "weaknesses": ["약점 1"],
-      "suggestions": "개선 제안"
-    }},
-    "section2": {{"score": 0, "strengths": [], "weaknesses": [], "suggestions": ""}},
-    "section3": {{"score": 0, "strengths": [], "weaknesses": [], "suggestions": ""}},
-    "section4": {{"score": 0, "strengths": [], "weaknesses": [], "suggestions": ""}},
-    "section5": {{"score": 0, "strengths": [], "weaknesses": [], "suggestions": ""}},
-    "section6": {{"score": 0, "strengths": [], "weaknesses": [], "suggestions": ""}}
-  }},
-  "validation_check": {{
-    "recurring_bm": {{"pass": true, "comment": ""}},
-    "art_ecosystem": {{"pass": true, "comment": ""}},
-    "fund_ratio": {{"pass": true, "comment": ""}},
-    "scaleup_roadmap": {{"pass": true, "comment": ""}}
-  }},
-  "priority_improvements": ["우선 보완 1", "우선 보완 2", "우선 보완 3"],
-  "competitive_edge": "경쟁 우위 분석 (2~3문장)",
-  "approval_likelihood": "합격 가능성 (높음/보통/낮음)",
-  "approval_reason": "그 이유"
-}}"""
-
-    resp = model.generate_content(prompt)
-    return json.loads(_strip_json(resp.text))
-
 
 # ═══════════════════════════════════════════════════
 # CSS 스타일
@@ -418,7 +54,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 # ═══════════════════════════════════════════════════
 # 사이드바
 # ═══════════════════════════════════════════════════
@@ -430,13 +65,43 @@ with st.sidebar:
 
     # ── API Key ──
     st.subheader("🔑 API 설정")
-    api_key = st.text_input(
-        "Google Gemini API Key",
-        type="password",
-        value=os.environ.get("GEMINI_API_KEY", ""),
-        help="https://aistudio.google.com 에서 무료 발급 가능",
-        placeholder="AIza...",
+    ai_provider = st.radio(
+        "AI 제공자 선택",
+        ["Gemini (Google)", "OpenAI", "Claude (Anthropic)"],
+        horizontal=True,
+        key="ai_provider",
     )
+
+    if ai_provider == "Gemini (Google)":
+        api_key = st.text_input(
+            "Google Gemini API Key",
+            type="password",
+            value=os.environ.get("GEMINI_API_KEY", ""),
+            help="https://aistudio.google.com 에서 무료 발급",
+            placeholder="AIza...",
+        )
+        openai_key = ""
+        claude_key = ""
+    elif ai_provider == "OpenAI":
+        api_key = ""
+        openai_key = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            value=os.environ.get("OPENAI_API_KEY", ""),
+            help="https://platform.openai.com/api-keys 에서 발급",
+            placeholder="sk-...",
+        )
+        claude_key = ""
+    else:
+        api_key = ""
+        openai_key = ""
+        claude_key = st.text_input(
+            "Anthropic API Key",
+            type="password",
+            value=os.environ.get("ANTHROPIC_API_KEY", ""),
+            help="https://console.anthropic.com 에서 발급",
+            placeholder="sk-ant-...",
+        )
 
     st.divider()
 
@@ -460,6 +125,24 @@ with st.sidebar:
 
     st.caption(f"**마지막 수정**: {current_plan.get('updated_at', '')[:16].replace('T', ' ')}")
     st.caption(f"**총 업데이트**: {len(current_plan.get('change_log', []))}회")
+
+    st.divider()
+
+    # ── API 사용량 절약 설정 ──
+    st.subheader("⚡ 토큰 절약 설정")
+    review_max_chars = st.slider(
+        "심사 섹션당 글자 수 제한",
+        min_value=0,
+        max_value=2000,
+        value=0,
+        step=200,
+        help="0 = 제한 없음 (전체). 높을수록 정확하지만 토큰 소모 많음. 절약 시 800 권장.",
+        format="%d자",
+    )
+    if review_max_chars == 0:
+        st.caption("현재: 전체 내용 전송 (정확도 최대)")
+    else:
+        st.caption(f"현재: 섹션당 최대 {review_max_chars}자 전송")
 
     st.divider()
 
@@ -575,28 +258,37 @@ with tab_doc:
 with tab_update:
     st.subheader("✏️ 새로운 정보 입력 → AI 자동 업데이트")
 
-    if not api_key:
-        st.warning("⚠️ 사이드바에서 Gemini API Key를 입력해주세요.")
+    if not api_key and not openai_key and not claude_key:
+        st.warning("⚠️ 사이드바에서 API Key를 입력해주세요.")
         st.stop()
 
     st.info(
-        "**사용 방법**: 아래에 새로운 정보를 자유롭게 입력하세요. AI가 해당 내용을 어느 섹션에 반영할지 판단하고 업데이트합니다.\n\n"
-        "**예시**:\n"
-        "- `홍대 인디밴드 3팀이랑 구두 협의 완료함`\n"
-        "- `통계청에서 공연 시장 물가지수 119포인트 발표함`\n"
-        "- `MVP 베타 테스트에서 유저 만족도 4.2점 받음`\n"
+        "**사용 방법**: 아래에 새로운 정보를 자유롭게 입력하세요. AI가 해당 내용을 어느 섹션에 반영할지 판단하고 업데이트합니다.\\n\\n"
+        "**예시**:\\n"
+        "- `홍대 인디밴드 3팀이랑 구두 협의 완료함`\\n"
+        "- `통계청에서 공연 시장 물가지수 119포인트 발표함`\\n"
+        "- `MVP 베타 테스트에서 유저 만족도 4.2점 받음`\\n"
         "- `총 사업비 6천만 원, 자기부담금 1200만 원으로 수정`"
     )
 
-    # 업데이트 범위 선택
-    scope = st.radio(
-        "업데이트 범위",
-        ["🤖 AI가 자동 판단", "🎯 특정 섹션 지정"],
-        horizontal=True,
-    )
+    # 업데이트 모드 선택
+    col_mode, col_scope = st.columns(2)
+    with col_mode:
+        update_mode = st.radio(
+            "업데이트 방식",
+            ["🔄 전체 업데이트", "⚡ 차분 업데이트 (토큰 절약)"],
+            horizontal=True,
+            help="차분: 변경 블록만 반환 → 토큰 80% 절감. 전체: 섹션 전체 재작성 → 정확도 높음.",
+        )
+    with col_scope:
+        scope = st.radio(
+            "업데이트 범위",
+            ["🤖 AI가 자동 판단", "🎯 특정 섹션 지정"],
+            horizontal=True,
+        )
 
     target_secs = None
-    if scope == "🎯 특정 섹션 지정":
+    if scope == "🎯 특정 섹션 지정" and update_mode == "🔄 전체 업데이트":
         target_secs = st.multiselect(
             "업데이트할 섹션",
             SECTION_KEYS,
@@ -620,9 +312,43 @@ with tab_update:
         )
 
     if run_btn and memo_input.strip():
-        with st.spinner("Gemini AI가 분석 중입니다... (10~20초)"):
+        is_diff = update_mode == "⚡ 차분 업데이트 (토큰 절약)"
+        provider_label = {"OpenAI": "OpenAI", "Claude (Anthropic)": "Claude"}.get(ai_provider, "Gemini")
+        mode_label = "차분" if is_diff else "전체"
+        with st.spinner(f"{provider_label} AI 분석 중... ({mode_label} 업데이트)"):
             try:
-                result = ai_update_sections(api_key, current_plan, memo_input, target_secs)
+                if is_diff:
+                    # ── 차분 업데이트 경로 ──
+                    if ai_provider == "OpenAI":
+                        raw = ai_update_sections_diff_openai(openai_key, current_plan, memo_input)
+                    elif ai_provider == "Claude (Anthropic)":
+                        raw = ai_update_sections_diff_claude(claude_key, current_plan, memo_input)
+                    else:
+                        raw = ai_update_sections_diff(api_key, current_plan, memo_input)
+
+                    # diff_updates → 각 섹션에 apply_diff_update 적용해 updates 형태로 변환
+                    diff_updates = raw.get("diff_updates", {})
+                    applied_updates = {}
+                    for sec_key, patches in diff_updates.items():
+                        original = current_plan["sections"].get(sec_key, "")
+                        applied_updates[sec_key] = apply_diff_update(original, patches)
+
+                    result = {
+                        "target_sections": list(diff_updates.keys()),
+                        "reason": raw.get("reason", ""),
+                        "updates": applied_updates,
+                        "summary": raw.get("summary", ""),
+                        "reviewer_comment": raw.get("reviewer_comment", ""),
+                        "warnings": raw.get("warnings", []),
+                    }
+                else:
+                    # ── 전체 업데이트 경로 ──
+                    if ai_provider == "OpenAI":
+                        result = ai_update_sections_openai(openai_key, current_plan, memo_input, target_secs)
+                    elif ai_provider == "Claude (Anthropic)":
+                        result = ai_update_sections_claude(claude_key, current_plan, memo_input, target_secs)
+                    else:
+                        result = ai_update_sections(api_key, current_plan, memo_input, target_secs)
             except json.JSONDecodeError as e:
                 st.error(f"AI 응답 파싱 실패: {e}")
                 st.stop()
@@ -714,18 +440,23 @@ with tab_update:
 with tab_review:
     st.subheader("🔍 AI 예비 심사")
     st.info(
-        "2026 예술분야 창업지원사업 심사 기준으로 현재 사업계획서를 AI가 예비 심사합니다.\n"
+        "2026 예술분야 창업지원사업 심사 기준으로 현재 사업계획서를 AI가 예비 심사합니다.\\n"
         "심사에는 약 30~60초가 소요됩니다 (Gemini 1.5 Pro 모델 사용)."
     )
 
-    if not api_key:
-        st.warning("⚠️ 사이드바에서 Gemini API Key를 입력해주세요.")
+    if not api_key and not openai_key and not claude_key:
+        st.warning("⚠️ 사이드바에서 API Key를 입력해주세요.")
         st.stop()
 
     if st.button("🔍 예비 심사 시작", type="primary", key="start_review"):
         with st.spinner("심사위원 AI가 검토 중입니다..."):
             try:
-                review = ai_preliminary_review(api_key, current_plan)
+                if ai_provider == "OpenAI":
+                    review = ai_preliminary_review_openai(openai_key, current_plan, review_max_chars)
+                elif ai_provider == "Claude (Anthropic)":
+                    review = ai_preliminary_review_claude(claude_key, current_plan, review_max_chars)
+                else:
+                    review = ai_preliminary_review(api_key, current_plan)
             except json.JSONDecodeError as e:
                 st.error(f"AI 응답 파싱 실패: {e}")
                 st.stop()
