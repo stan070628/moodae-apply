@@ -4,15 +4,25 @@ import { useState, useRef, useEffect } from "react";
 import type { ChatMessage, WBSItem, Minutes } from "@/lib/types";
 import { statusLabel, statusColor, dDayLabel, dDayColor } from "@/lib/utils";
 import { useApp } from "@/components/AppProvider";
+import MentionInput from "@/components/MentionInput";
 
 interface ChatPanelProps {
     item: WBSItem;
     messages: ChatMessage[];
     minutes: Minutes[];
-    onSendMessage: (text: string, author: string) => void;
+    onSendMessage: (text: string, author: string, mentions: string[]) => void;
     onGenerateMinutes: (selectedMessages: ChatMessage[]) => void;
     onClose: () => void;
     generatingMinutes?: boolean;
+}
+
+function parseMention(text: string) {
+    const parts = text.split(/(@\w+)/g);
+    return parts.map((part, i) => {
+        if (part === "@ALL") return <span key={i} className="text-[#F43F5E] font-semibold">{part}</span>;
+        if (part.startsWith("@")) return <span key={i} className="text-[#A855F7] font-semibold">{part}</span>;
+        return <span key={i}>{part}</span>;
+    });
 }
 
 export default function ChatPanel({
@@ -25,8 +35,6 @@ export default function ChatPanel({
     generatingMinutes = false,
 }: ChatPanelProps) {
     const { nickname } = useApp();
-    const [text, setText] = useState("");
-
     const [selectMode, setSelectMode] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -34,12 +42,6 @@ export default function ChatPanel({
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
-
-    const handleSend = () => {
-        if (!text.trim()) return;
-        onSendMessage(text.trim(), nickname);
-        setText("");
-    };
 
     const toggleSelect = (id: string) => {
         setSelected((prev) => {
@@ -88,41 +90,48 @@ export default function ChatPanel({
                         아직 메시지가 없습니다.<br />첫 번째 메시지를 보내보세요!
                     </div>
                 )}
-                {messages.map((msg) => (
-                    <div
-                        key={msg.id}
-                        onClick={() => selectMode && !msg.isSystem && toggleSelect(msg.id)}
-                        className={`
-              ${selectMode && !msg.isSystem ? "cursor-pointer" : ""}
-              ${selected.has(msg.id) ? "ring-1 ring-[var(--color-brand)] bg-[var(--color-brand)]/5" : ""}
-              ${msg.isSystem ? "text-center" : ""}
-              rounded-lg transition-all
-            `}
-                    >
-                        {msg.isSystem ? (
-                            <div className="py-2 px-3 text-[13px] text-zinc-500 italic border border-dashed border-[var(--color-border)] rounded-lg bg-[var(--color-background)]/50">
-                                🔔 {msg.text}
-                            </div>
-                        ) : (
-                            <div className="flex gap-2.5">
-                                {selectMode && (
-                                    <div className="flex-shrink-0 mt-1">
-                                        <div className={`w-4 h-4 rounded border ${selected.has(msg.id) ? "bg-[var(--color-brand)] border-[var(--color-brand)]" : "border-zinc-600"} flex items-center justify-center`}>
-                                            {selected.has(msg.id) && <span className="text-white text-[10px]">✓</span>}
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-baseline gap-2 mb-0.5">
-                                        <span className="text-[15px] font-semibold text-zinc-200">{msg.author}</span>
-                                        <span className="text-[13px] text-zinc-600">{msg.time}</span>
-                                    </div>
-                                    <p className="text-[15px] text-zinc-300 break-words">{msg.text}</p>
+                {messages.map((msg) => {
+                    const isMentioned = !msg.isSystem && (
+                        msg.mentions?.includes(nickname) || msg.mentions?.includes("ALL")
+                    );
+                    return (
+                        <div
+                            key={msg.id}
+                            onClick={() => selectMode && !msg.isSystem && toggleSelect(msg.id)}
+                            className={`
+                                ${selectMode && !msg.isSystem ? "cursor-pointer" : ""}
+                                ${selected.has(msg.id) ? "ring-1 ring-[var(--color-brand)] bg-[var(--color-brand)]/5" : ""}
+                                ${isMentioned ? "bg-[#A855F7]/5 rounded-lg" : ""}
+                                ${msg.isSystem ? "text-center" : ""}
+                                rounded-lg transition-all
+                            `}
+                        >
+                            {msg.isSystem ? (
+                                <div className="py-2 px-3 text-[13px] text-zinc-500 italic border border-dashed border-[var(--color-border)] rounded-lg bg-[var(--color-background)]/50">
+                                    🔔 {msg.text}
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                ))}
+                            ) : (
+                                <div className="flex gap-2.5">
+                                    {selectMode && (
+                                        <div className="flex-shrink-0 mt-1">
+                                            <div className={`w-4 h-4 rounded border ${selected.has(msg.id) ? "bg-[var(--color-brand)] border-[var(--color-brand)]" : "border-zinc-600"} flex items-center justify-center`}>
+                                                {selected.has(msg.id) && <span className="text-white text-[10px]">✓</span>}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-baseline gap-2 mb-0.5">
+                                            <span className="text-[15px] font-semibold text-zinc-200">{msg.author}</span>
+                                            <span className="text-[13px] text-zinc-600">{msg.time}</span>
+                                            {isMentioned && <span className="text-[11px] text-[#A855F7] font-medium">멘션됨</span>}
+                                        </div>
+                                        <p className="text-[15px] text-zinc-300 break-words">{parseMention(msg.text)}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
                 <div ref={messagesEndRef} />
             </div>
 
@@ -165,23 +174,10 @@ export default function ChatPanel({
                         📝 구간 선택
                     </button>
                 )}
-                <div className="flex gap-2 items-center">
-                    <span className="text-[14px] font-semibold text-[var(--color-brand)] bg-[var(--color-brand)]/10 px-2.5 py-2 rounded-lg border border-[var(--color-brand)]/20 flex-shrink-0">{nickname}</span>
-                    <input
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSend()}
-                        placeholder="메시지 입력..."
-                        className="flex-1 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-[16px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[var(--color-brand)]"
-                    />
-                    <button
-                        onClick={handleSend}
-                        disabled={!text.trim()}
-                        className="px-4 py-2.5 rounded-lg bg-[var(--color-brand)] text-white text-[15px] font-medium hover:bg-[var(--color-brand)]/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
-                    >
-                        전송
-                    </button>
-                </div>
+                <MentionInput
+                    nickname={nickname}
+                    onSend={(text, mentions) => onSendMessage(text, nickname, mentions)}
+                />
             </div>
         </div>
     );

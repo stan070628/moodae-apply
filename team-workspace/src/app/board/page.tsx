@@ -3,17 +3,19 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
     collection, doc, onSnapshot, setDoc, deleteDoc,
-    addDoc, query, orderBy, serverTimestamp, updateDoc,
+    addDoc, query, orderBy, serverTimestamp, updateDoc, increment,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import WBSBoard from "@/components/WBSBoard";
 import ChatPanel from "@/components/ChatPanel";
 import ChatPage from "@/components/ChatPage";
-import { INITIAL_WBS } from "@/lib/data";
+import { INITIAL_WBS, TEAM } from "@/lib/data";
+import { useApp } from "@/components/AppProvider";
 import type { WBSItem, ChatMessage, Minutes, Status } from "@/lib/types";
 
 export default function BoardPage() {
+    const { nickname } = useApp();
     const [items, setItems] = useState<WBSItem[]>([]);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [minutes, setMinutes] = useState<Minutes[]>([]);
@@ -112,16 +114,33 @@ export default function BoardPage() {
         });
     }, []);
 
-    // 채팅 메시지 전송
-    const handleSendMessage = useCallback((text: string, author: string) => {
+    // 채팅 메시지 전송 (mentions 포함)
+    const handleSendMessage = useCallback((text: string, author: string, mentions: string[]) => {
         if (!selectedItemId) return;
         addDoc(collection(db, "chats", String(selectedItemId), "msgs"), {
             author,
             text,
+            mentions,
             time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
             isSystem: false,
             createdAt: serverTimestamp(),
         });
+        // 멘션된 유저의 뱃지 카운트 증가
+        if (mentions.length > 0) {
+            const updateData: Record<string, unknown> = {};
+            mentions.forEach((m) => {
+                if (m === "ALL") {
+                    TEAM.forEach((member) => {
+                        if (member !== author) updateData[`mentionCounts.${member}`] = increment(1);
+                    });
+                } else if (m !== author) {
+                    updateData[`mentionCounts.${m}`] = increment(1);
+                }
+            });
+            if (Object.keys(updateData).length > 0) {
+                updateDoc(doc(db, "wbs", String(selectedItemId)), updateData);
+            }
+        }
     }, [selectedItemId]);
 
     // 회의록 생성
@@ -192,7 +211,16 @@ export default function BoardPage() {
                             onDeleteItem={handleDeleteItem}
                             onSystemMessage={handleSystemMessage}
                             selectedItemId={selectedItemId}
-                            setSelectedItemId={setSelectedItemId}
+                            setSelectedItemId={(id) => {
+                                setSelectedItemId(id);
+                                // 채널 진입 시 해당 유저의 멘션 카운트 초기화
+                                if (id && nickname) {
+                                    updateDoc(doc(db, "wbs", String(id)), {
+                                        [`mentionCounts.${nickname}`]: 0,
+                                    }).catch(() => {});
+                                }
+                            }}
+                            nickname={nickname}
                         />
                     </div>
                 </div>

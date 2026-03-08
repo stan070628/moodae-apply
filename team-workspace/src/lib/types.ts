@@ -17,6 +17,7 @@ export interface WBSItem {
     assignee: string;
     due: string;
     history: RevertHistory[];
+    mentionCounts?: Record<string, number>;
 }
 
 export interface ChatMessage {
@@ -25,6 +26,7 @@ export interface ChatMessage {
     text: string;
     time: string;
     isSystem?: boolean;
+    mentions?: string[];
 }
 
 export interface Minutes {

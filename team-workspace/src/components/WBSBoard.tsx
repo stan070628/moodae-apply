@@ -17,6 +17,7 @@ interface WBSBoardProps {
     onSystemMessage: (itemId: number, text: string) => void;
     selectedItemId: number | null;
     setSelectedItemId: (id: number | null) => void;
+    nickname: string;
 }
 
 export default function WBSBoard({
@@ -27,6 +28,7 @@ export default function WBSBoard({
     onSystemMessage,
     selectedItemId,
     setSelectedItemId,
+    nickname,
 }: WBSBoardProps) {
     const [filterCat, setFilterCat] = useState<string>("all");
     const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -154,7 +156,14 @@ export default function WBSBoard({
                                     {/* Mobile layout */}
                                     <div className="md:hidden">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[16px] font-medium text-zinc-200">{item.item}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[16px] font-medium text-zinc-200">{item.item}</span>
+                                                {(item.mentionCounts?.[nickname] ?? 0) > 0 && (
+                                                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-[#A855F7]/20 text-[#A855F7] border border-[#A855F7]/30 font-bold">
+                                                        @{item.mentionCounts![nickname]}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="flex items-center gap-1.5">
                                                 {item.history.length > 0 && (
                                                     <button
@@ -190,9 +199,14 @@ export default function WBSBoard({
 
                                     {/* Desktop layout */}
                                     <div className="hidden md:flex items-center gap-3">
-                                        <div className="flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0 flex items-center gap-2">
                                             <span className="text-[16px] font-medium text-zinc-200">{item.item}</span>
-                                            {item.summary && <span className="text-[13px] text-zinc-600 ml-2">— {item.summary}</span>}
+                                            {(item.mentionCounts?.[nickname] ?? 0) > 0 && (
+                                                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-[#A855F7]/20 text-[#A855F7] border border-[#A855F7]/30 font-bold flex-shrink-0">
+                                                    @{item.mentionCounts![nickname]}
+                                                </span>
+                                            )}
+                                            {item.summary && <span className="text-[13px] text-zinc-600 ml-1">— {item.summary}</span>}
                                         </div>
 
                                         {item.history.length > 0 && (

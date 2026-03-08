@@ -1,0 +1,103 @@
+"use client";
+
+import { useState, useRef } from "react";
+import { TEAM } from "@/lib/data";
+
+const MENTION_OPTIONS = [...TEAM, "ALL"];
+
+export function extractMentions(text: string): string[] {
+    const matches = text.match(/@(\w+)/g) || [];
+    return matches.map((m) => m.slice(1)).filter((m) => MENTION_OPTIONS.includes(m));
+}
+
+interface MentionInputProps {
+    nickname: string;
+    onSend: (text: string, mentions: string[]) => void;
+}
+
+export default function MentionInput({ nickname, onSend }: MentionInputProps) {
+    const [text, setText] = useState("");
+    const [mentionSearch, setMentionSearch] = useState<string | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const handleChange = (value: string) => {
+        setText(value);
+        const lastAt = value.lastIndexOf("@");
+        if (lastAt !== -1) {
+            const afterAt = value.slice(lastAt + 1);
+            if (!afterAt.includes(" ")) {
+                setMentionSearch(afterAt.toLowerCase());
+                return;
+            }
+        }
+        setMentionSearch(null);
+    };
+
+    const selectMention = (mention: string) => {
+        const lastAt = text.lastIndexOf("@");
+        const newText = text.slice(0, lastAt) + `@${mention} `;
+        setText(newText);
+        setMentionSearch(null);
+        inputRef.current?.focus();
+    };
+
+    const handleSend = () => {
+        if (!text.trim()) return;
+        const mentions = extractMentions(text);
+        onSend(text.trim(), mentions);
+        setText("");
+        setMentionSearch(null);
+    };
+
+    const filtered =
+        mentionSearch !== null
+            ? MENTION_OPTIONS.filter((m) => m.toLowerCase().startsWith(mentionSearch))
+            : [];
+
+    return (
+        <div className="relative flex gap-2 items-center">
+            {/* 멘션 팝업 */}
+            {filtered.length > 0 && (
+                <div className="absolute bottom-full left-10 mb-2 bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-xl shadow-xl overflow-hidden z-50 min-w-[140px]">
+                    {filtered.map((m) => (
+                        <button
+                            key={m}
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                selectMention(m);
+                            }}
+                            className="w-full text-left px-3 py-2.5 text-[14px] text-zinc-200 hover:bg-[var(--color-brand)]/20 transition-colors flex items-center gap-2"
+                        >
+                            <span className="text-[var(--color-brand)] font-bold text-[13px]">@</span>
+                            {m === "ALL" ? (
+                                <span className="text-[#F43F5E] font-semibold">ALL</span>
+                            ) : (
+                                <span>{m}</span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            <span className="text-[14px] font-semibold text-[var(--color-brand)] bg-[var(--color-brand)]/10 px-2.5 py-2 rounded-lg border border-[var(--color-brand)]/20 flex-shrink-0">
+                {nickname}
+            </span>
+            <input
+                ref={inputRef}
+                value={text}
+                onChange={(e) => handleChange(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSend()}
+                onBlur={() => setTimeout(() => setMentionSearch(null), 150)}
+                placeholder="메시지 입력... (@로 멘션)"
+                className="flex-1 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-[16px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[var(--color-brand)]"
+            />
+            <button
+                onClick={handleSend}
+                disabled={!text.trim()}
+                className="px-4 py-2.5 rounded-lg bg-[var(--color-brand)] text-white text-[15px] font-medium hover:bg-[var(--color-brand)]/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+            >
+                전송
+            </button>
+        </div>
+    );
+}
