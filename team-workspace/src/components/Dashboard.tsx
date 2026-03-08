@@ -33,8 +33,8 @@ export default function Dashboard({ items }: DashboardProps) {
                         className={`${s.bg} border rounded-xl p-4 animate-fade-in`}
                         style={{ animationDelay: `${i * 0.05}s` }}
                     >
-                        <p className="text-xs text-zinc-500 mb-1">{s.label}</p>
-                        <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+                        <p className="text-[14px] text-zinc-500 mb-1">{s.label}</p>
+                        <p className={`text-[34px] font-bold ${s.color}`}>{s.value}</p>
                     </div>
                 ))}
             </div>
@@ -43,20 +43,20 @@ export default function Dashboard({ items }: DashboardProps) {
                 {/* Urgent */}
                 <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 animate-slide-up" style={{ animationDelay: "0.1s" }}>
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-bold text-white">🚨 긴급 마감</h3>
-                        <span className="text-[10px] text-zinc-500">D-5 이내 미확정</span>
+                        <h3 className="text-[16px] font-bold text-white">🚨 긴급 마감</h3>
+                        <span className="text-[13px] text-zinc-500">D-5 이내 미확정</span>
                     </div>
                     {urgent.length === 0 ? (
-                        <p className="text-sm text-zinc-600 text-center py-6">긴급 항목 없음 ✨</p>
+                        <p className="text-[15px] text-zinc-600 text-center py-6">긴급 항목 없음 ✨</p>
                     ) : (
                         <div className="space-y-2">
                             {urgent.sort((a, b) => daysLeft(a.due) - daysLeft(b.due)).map((item) => (
                                 <div key={item.id} className="flex items-center justify-between bg-[var(--color-background)] rounded-lg px-3 py-2">
                                     <div className="min-w-0">
-                                        <p className="text-sm text-zinc-200 truncate">{item.item}</p>
-                                        <p className="text-[10px] text-zinc-500">{item.cat}</p>
+                                        <p className="text-[15px] text-zinc-200 truncate">{item.item}</p>
+                                        <p className="text-[13px] text-zinc-500">{item.cat}</p>
                                     </div>
-                                    <span className={`text-xs font-bold ${dDayColor(item.due)} flex-shrink-0 ml-2`}>
+                                    <span className={`text-[14px] font-bold ${dDayColor(item.due)} flex-shrink-0 ml-2`}>
                                         {dDayLabel(item.due)}
                                     </span>
                                 </div>
@@ -67,7 +67,7 @@ export default function Dashboard({ items }: DashboardProps) {
 
                 {/* Category progress */}
                 <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 animate-slide-up" style={{ animationDelay: "0.15s" }}>
-                    <h3 className="text-sm font-bold text-white mb-3">📊 카테고리별 진행률</h3>
+                    <h3 className="text-[16px] font-bold text-white mb-3">📊 카테고리별 진행률</h3>
                     <div className="space-y-3">
                         {CATEGORIES.map((cat) => {
                             const catItems = items.filter((i) => i.cat === cat);
@@ -76,8 +76,8 @@ export default function Dashboard({ items }: DashboardProps) {
                             return (
                                 <div key={cat}>
                                     <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs text-zinc-400 truncate">{cat}</span>
-                                        <span className="text-xs text-zinc-500 flex-shrink-0 ml-2">{catConfirmed}/{catItems.length}</span>
+                                        <span className="text-[14px] text-zinc-400 truncate">{cat}</span>
+                                        <span className="text-[13px] text-zinc-500 flex-shrink-0 ml-2">{catConfirmed}/{catItems.length}</span>
                                     </div>
                                     <div className="h-1.5 bg-[var(--color-background)] rounded-full overflow-hidden">
                                         <div
@@ -94,24 +94,24 @@ export default function Dashboard({ items }: DashboardProps) {
                 {/* Unassigned */}
                 <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-bold text-white">👤 미배정 항목</h3>
+                        <h3 className="text-[16px] font-bold text-white">👤 미배정 항목</h3>
                         {unassigned.length > 0 && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                            <span className="text-[13px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
                                 {unassigned.length}건
                             </span>
                         )}
                     </div>
                     {unassigned.length === 0 ? (
-                        <p className="text-sm text-zinc-600 text-center py-6">모두 배정 완료 👍</p>
+                        <p className="text-[15px] text-zinc-600 text-center py-6">모두 배정 완료 👍</p>
                     ) : (
                         <div className="space-y-2">
                             {unassigned.map((item) => (
                                 <div key={item.id} className="flex items-center justify-between bg-[var(--color-background)] rounded-lg px-3 py-2">
                                     <div className="min-w-0">
-                                        <p className="text-sm text-zinc-200 truncate">{item.item}</p>
-                                        <p className="text-[10px] text-zinc-500">{item.cat}</p>
+                                        <p className="text-[15px] text-zinc-200 truncate">{item.item}</p>
+                                        <p className="text-[13px] text-zinc-500">{item.cat}</p>
                                     </div>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full border flex-shrink-0 ml-2 ${statusColor(item.status)}`}>
+                                    <span className={`text-[13px] px-2 py-0.5 rounded-full border flex-shrink-0 ml-2 ${statusColor(item.status)}`}>
                                         {statusLabel(item.status)}
                                     </span>
                                 </div>
@@ -125,7 +125,7 @@ export default function Dashboard({ items }: DashboardProps) {
             <div className="text-center">
                 <Link
                     href="/board"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-brand)]/10 text-[var(--color-brand)] border border-[var(--color-brand)]/20 hover:bg-[var(--color-brand)]/20 transition-colors text-sm font-medium"
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-brand)]/10 text-[var(--color-brand)] border border-[var(--color-brand)]/20 hover:bg-[var(--color-brand)]/20 transition-colors text-[15px] font-medium min-h-[44px]"
                 >
                     📋 WBS 보드로 이동 →
                 </Link>

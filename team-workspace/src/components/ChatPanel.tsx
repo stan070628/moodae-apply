@@ -57,12 +57,12 @@ export default function ChatPanel({
             {/* Header */}
             <div className="flex-shrink-0 border-b border-[var(--color-border)] p-4">
                 <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <h3 className="text-[16px] font-bold text-white flex items-center gap-2">
                         <span className="text-zinc-500">#</span> {item.item}
                     </h3>
                     <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 transition-colors text-lg">✕</button>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-[13px]">
                     <span className={`px-2 py-0.5 rounded-full border ${statusColor(item.status)}`}>{statusLabel(item.status)}</span>
                     {item.assignee && <span className="text-zinc-400">{item.assignee}</span>}
                     <span className={dDayColor(item.due)}>{dDayLabel(item.due)}</span>
@@ -72,9 +72,9 @@ export default function ChatPanel({
             {/* Minutes preview */}
             {itemMinutes.length > 0 && (
                 <div className="flex-shrink-0 border-b border-[var(--color-border)] p-3 max-h-40 overflow-y-auto">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">📝 최근 회의록</p>
+                    <p className="text-[13px] font-bold text-zinc-500 uppercase tracking-wider mb-2">📝 최근 회의록</p>
                     {itemMinutes.slice(-2).map((m) => (
-                        <div key={m.id} className="bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg p-2.5 mb-1.5 text-xs text-zinc-300 whitespace-pre-wrap">
+                        <div key={m.id} className="bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg p-2.5 mb-1.5 text-[13px] text-zinc-300 whitespace-pre-wrap">
                             {m.content.substring(0, 200)}{m.content.length > 200 ? "..." : ""}
                         </div>
                     ))}
@@ -84,7 +84,7 @@ export default function ChatPanel({
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.length === 0 && (
-                    <div className="text-center py-12 text-zinc-600 text-sm">
+                    <div className="text-center py-12 text-zinc-600 text-[15px]">
                         아직 메시지가 없습니다.<br />첫 번째 메시지를 보내보세요!
                     </div>
                 )}
@@ -100,7 +100,7 @@ export default function ChatPanel({
             `}
                     >
                         {msg.isSystem ? (
-                            <div className="py-2 px-3 text-xs text-zinc-500 italic border border-dashed border-[var(--color-border)] rounded-lg bg-[var(--color-background)]/50">
+                            <div className="py-2 px-3 text-[13px] text-zinc-500 italic border border-dashed border-[var(--color-border)] rounded-lg bg-[var(--color-background)]/50">
                                 🔔 {msg.text}
                             </div>
                         ) : (
@@ -114,10 +114,10 @@ export default function ChatPanel({
                                 )}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-baseline gap-2 mb-0.5">
-                                        <span className="text-xs font-semibold text-zinc-200">{msg.author}</span>
-                                        <span className="text-[10px] text-zinc-600">{msg.time}</span>
+                                        <span className="text-[15px] font-semibold text-zinc-200">{msg.author}</span>
+                                        <span className="text-[13px] text-zinc-600">{msg.time}</span>
                                     </div>
-                                    <p className="text-sm text-zinc-300 break-words">{msg.text}</p>
+                                    <p className="text-[15px] text-zinc-300 break-words">{msg.text}</p>
                                 </div>
                             </div>
                         )}
@@ -130,11 +130,11 @@ export default function ChatPanel({
             {selectMode && (
                 <div className="flex-shrink-0 border-t border-[var(--color-border)] p-3 bg-[var(--color-brand)]/5">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs text-zinc-400">{selected.size}개 선택됨</span>
+                        <span className="text-[13px] text-zinc-400">{selected.size}개 선택됨</span>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => { setSelectMode(false); setSelected(new Set()); }}
-                                className="px-3 py-1.5 text-xs rounded-lg border border-[var(--color-border)] text-zinc-400 hover:text-zinc-200 transition-colors"
+                                className="px-3 py-2 text-[14px] rounded-lg border border-[var(--color-border)] text-zinc-400 hover:text-zinc-200 transition-colors min-h-[44px]"
                             >
                                 취소
                             </button>
@@ -146,7 +146,7 @@ export default function ChatPanel({
                                     setSelected(new Set());
                                 }}
                                 disabled={selected.size < 2 || generatingMinutes}
-                                className="px-3 py-1.5 text-xs rounded-lg bg-[var(--color-brand)]/20 text-[var(--color-brand)] border border-[var(--color-brand)]/30 hover:bg-[var(--color-brand)]/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-2 text-[14px] rounded-lg bg-[var(--color-brand)]/20 text-[var(--color-brand)] border border-[var(--color-brand)]/30 hover:bg-[var(--color-brand)]/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
                             >
                                 {generatingMinutes ? "생성 중..." : "회의록 생성"}
                             </button>
@@ -160,24 +160,24 @@ export default function ChatPanel({
                 {!selectMode && (
                     <button
                         onClick={() => setSelectMode(true)}
-                        className="mb-2 text-xs text-zinc-500 hover:text-[var(--color-brand)] transition-colors"
+                        className="mb-2 text-[14px] text-zinc-500 hover:text-[var(--color-brand)] transition-colors"
                     >
                         📝 구간 선택
                     </button>
                 )}
                 <div className="flex gap-2 items-center">
-                    <span className="text-xs font-semibold text-[var(--color-brand)] bg-[var(--color-brand)]/10 px-2.5 py-2 rounded-lg border border-[var(--color-brand)]/20 flex-shrink-0">{nickname}</span>
+                    <span className="text-[14px] font-semibold text-[var(--color-brand)] bg-[var(--color-brand)]/10 px-2.5 py-2 rounded-lg border border-[var(--color-brand)]/20 flex-shrink-0">{nickname}</span>
                     <input
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSend()}
                         placeholder="메시지 입력..."
-                        className="flex-1 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[var(--color-brand)]"
+                        className="flex-1 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-[16px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[var(--color-brand)]"
                     />
                     <button
                         onClick={handleSend}
                         disabled={!text.trim()}
-                        className="px-3 py-2 rounded-lg bg-[var(--color-brand)] text-white text-sm font-medium hover:bg-[var(--color-brand)]/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="px-4 py-2.5 rounded-lg bg-[var(--color-brand)] text-white text-[15px] font-medium hover:bg-[var(--color-brand)]/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
                     >
                         전송
                     </button>

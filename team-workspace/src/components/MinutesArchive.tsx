@@ -11,8 +11,8 @@ export default function MinutesArchive({ minutes }: MinutesArchiveProps) {
         return (
             <div className="text-center py-20">
                 <p className="text-4xl mb-3">📝</p>
-                <p className="text-zinc-500 text-sm">아직 생성된 회의록이 없습니다.</p>
-                <p className="text-zinc-600 text-xs mt-1">WBS 보드의 채팅에서 구간 선택 후 회의록을 생성해보세요.</p>
+                <p className="text-zinc-500 text-[15px]">아직 생성된 회의록이 없습니다.</p>
+                <p className="text-zinc-600 text-[13px] mt-1">WBS 보드의 채팅에서 구간 선택 후 회의록을 생성해보세요.</p>
             </div>
         );
     }
@@ -28,9 +28,9 @@ export default function MinutesArchive({ minutes }: MinutesArchiveProps) {
         <div className="space-y-6">
             {Object.entries(grouped).map(([itemName, mList]) => (
                 <div key={itemName} className="animate-fade-in">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
+                    <h3 className="text-[16px] font-bold text-white flex items-center gap-2 mb-3">
                         <span className="text-zinc-500">#</span> {itemName}
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-brand)]/10 text-[var(--color-brand)] border border-[var(--color-brand)]/20">
+                        <span className="text-[13px] px-2 py-0.5 rounded-full bg-[var(--color-brand)]/10 text-[var(--color-brand)] border border-[var(--color-brand)]/20">
                             {mList.length}건
                         </span>
                     </h3>
@@ -41,7 +41,7 @@ export default function MinutesArchive({ minutes }: MinutesArchiveProps) {
                                 className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4"
                             >
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="text-[10px] text-zinc-500">
+                                    <span className="text-[13px] text-zinc-500">
                                         {new Date(m.createdAt).toLocaleDateString("ko-KR", {
                                             year: "numeric",
                                             month: "long",
@@ -51,7 +51,7 @@ export default function MinutesArchive({ minutes }: MinutesArchiveProps) {
                                         })}
                                     </span>
                                 </div>
-                                <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                                <div className="text-[15px] text-zinc-300 whitespace-pre-wrap leading-relaxed">
                                     {m.content}
                                 </div>
                             </div>

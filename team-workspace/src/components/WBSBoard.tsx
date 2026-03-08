@@ -136,7 +136,7 @@ export default function WBSBoard({
                 <select
                     value={filterCat}
                     onChange={(e) => setFilterCat(e.target.value)}
-                    className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-[var(--color-brand)]"
+                    className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[14px] text-zinc-300 focus:outline-none focus:border-[var(--color-brand)] min-h-[44px]"
                 >
                     <option value="all">전체 카테고리</option>
                     {CATEGORIES.map((c) => (
@@ -147,7 +147,7 @@ export default function WBSBoard({
                 <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-[var(--color-brand)]"
+                    className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[14px] text-zinc-300 focus:outline-none focus:border-[var(--color-brand)] min-h-[44px]"
                 >
                     <option value="all">전체 상태</option>
                     <option value="confirmed">확정</option>
@@ -159,7 +159,7 @@ export default function WBSBoard({
 
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="px-3 py-1.5 text-xs rounded-lg bg-[var(--color-brand)]/15 text-[var(--color-brand)] border border-[var(--color-brand)]/30 hover:bg-[var(--color-brand)]/25 transition-colors font-medium"
+                    className="px-4 py-2 text-[14px] rounded-lg bg-[var(--color-brand)]/15 text-[var(--color-brand)] border border-[var(--color-brand)]/30 hover:bg-[var(--color-brand)]/25 transition-colors font-medium min-h-[44px]"
                 >
                     ➕ 항목 추가
                 </button>
@@ -169,7 +169,7 @@ export default function WBSBoard({
             <div className="space-y-5">
                 {Object.entries(grouped).map(([cat, catItems]) => (
                     <div key={cat} className="animate-fade-in">
-                        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 px-1">{cat}</h3>
+                        <h3 className="text-[13px] font-bold text-zinc-400 uppercase tracking-wider mb-2 px-1">{cat}</h3>
                         <div className="space-y-1.5">
                             {catItems.map((item) => (
                                 <div
@@ -186,12 +186,12 @@ export default function WBSBoard({
                                     {/* Mobile layout */}
                                     <div className="md:hidden">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium text-zinc-200">{item.item}</span>
+                                            <span className="text-[16px] font-medium text-zinc-200">{item.item}</span>
                                             <div className="flex items-center gap-1.5">
                                                 {item.history.length > 0 && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setHistoryItemId(item.id); }}
-                                                        className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                                                        className="text-[13px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
                                                     >
                                                         🔄 {item.history.length}
                                                     </button>
@@ -204,12 +204,12 @@ export default function WBSBoard({
                                                 </button>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs">
+                                        <div className="flex items-center gap-2 text-[13px]">
                                             <select
                                                 value={item.status}
                                                 onChange={(e) => { e.stopPropagation(); handleStatusChange(item.id, e.target.value as Status); }}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className={`px-2 py-0.5 rounded-full border text-[10px] font-medium ${statusColor(item.status)} bg-transparent focus:outline-none`}
+                                                className={`px-2.5 py-1 rounded-full border text-[13px] font-medium ${statusColor(item.status)} bg-transparent focus:outline-none min-h-[44px]`}
                                             >
                                                 <option value="confirmed">확정</option>
                                                 <option value="unconfirmed">미확정</option>
@@ -223,15 +223,15 @@ export default function WBSBoard({
                                     {/* Desktop layout */}
                                     <div className="hidden md:flex items-center gap-3">
                                         <div className="flex-1 min-w-0">
-                                            <span className="text-sm font-medium text-zinc-200">{item.item}</span>
-                                            {item.summary && <span className="text-xs text-zinc-600 ml-2">— {item.summary}</span>}
+                                            <span className="text-[16px] font-medium text-zinc-200">{item.item}</span>
+                                            {item.summary && <span className="text-[13px] text-zinc-600 ml-2">— {item.summary}</span>}
                                         </div>
 
                                         {/* History badge */}
                                         {item.history.length > 0 && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setHistoryItemId(item.id); }}
-                                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 flex-shrink-0"
+                                                className="text-[13px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 flex-shrink-0"
                                                 title="번복 이력"
                                             >
                                                 🔄 {item.history.length}
@@ -243,7 +243,7 @@ export default function WBSBoard({
                                             value={item.status}
                                             onChange={(e) => { e.stopPropagation(); handleStatusChange(item.id, e.target.value as Status); }}
                                             onClick={(e) => e.stopPropagation()}
-                                            className={`px-2.5 py-1 rounded-full border text-[10px] font-medium ${statusColor(item.status)} bg-transparent focus:outline-none cursor-pointer flex-shrink-0`}
+                                            className={`px-3 py-1.5 rounded-full border text-[13px] font-medium ${statusColor(item.status)} bg-transparent focus:outline-none cursor-pointer flex-shrink-0`}
                                         >
                                             <option value="confirmed">확정</option>
                                             <option value="unconfirmed">미확정</option>
@@ -255,7 +255,7 @@ export default function WBSBoard({
                                             value={item.assignee}
                                             onChange={(e) => { e.stopPropagation(); handleAssigneeChange(item.id, e.target.value); }}
                                             onClick={(e) => e.stopPropagation()}
-                                            className={`bg-transparent border border-[var(--color-border)] rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-[var(--color-brand)] w-20 flex-shrink-0 ${item.assignee ? "text-zinc-300" : "text-red-400"}`}
+                                            className={`bg-transparent border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-[14px] focus:outline-none focus:border-[var(--color-brand)] w-24 flex-shrink-0 ${item.assignee ? "text-zinc-300" : "text-red-400"}`}
                                         >
                                             <option value="">미배정</option>
                                             {TEAM.map((m) => (
@@ -270,9 +270,9 @@ export default function WBSBoard({
                                                 value={item.due}
                                                 onChange={(e) => { e.stopPropagation(); handleDueChange(item.id, e.target.value); }}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="bg-transparent border border-[var(--color-border)] rounded-lg px-2 py-1 text-[10px] text-zinc-400 focus:outline-none focus:border-[var(--color-brand)] w-[120px]"
+                                                className="bg-transparent border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-[13px] text-zinc-400 focus:outline-none focus:border-[var(--color-brand)] w-[130px]"
                                             />
-                                            <span className={`text-xs font-bold ${dDayColor(item.due)} w-10 text-right`}>
+                                            <span className={`text-[14px] font-bold ${dDayColor(item.due)} w-12 text-right`}>
                                                 {dDayLabel(item.due)}
                                             </span>
                                         </div>
@@ -293,7 +293,7 @@ export default function WBSBoard({
             </div>
 
             {filtered.length === 0 && (
-                <div className="text-center py-16 text-zinc-600 text-sm">
+                <div className="text-center py-16 text-zinc-600 text-[15px]">
                     필터 조건에 맞는 항목이 없습니다.
                 </div>
             )}

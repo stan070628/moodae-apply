@@ -31,8 +31,8 @@ export default function MinutesPage() {
             <Navbar />
             <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
                 <div className="mb-6">
-                    <h1 className="text-xl font-bold text-white">📝 회의록 아카이브</h1>
-                    <p className="text-xs text-zinc-500 mt-0.5">AI가 생성한 회의록 모아보기</p>
+                    <h1 className="text-2xl font-bold text-white">📝 회의록 아카이브</h1>
+                    <p className="text-[14px] text-zinc-500 mt-0.5">AI가 생성한 회의록 모아보기</p>
                 </div>
                 <MinutesArchive minutes={minutes} />
             </main>
