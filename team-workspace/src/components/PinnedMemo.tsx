@@ -113,7 +113,7 @@ export default function PinnedMemo({ itemId }: PinnedMemoProps) {
                             onClick={startEdit}
                             className="text-[13px] text-zinc-300 whitespace-pre-wrap cursor-text leading-relaxed"
                         >
-                            {text || <span className="text-zinc-600 italic">편집을 눌러 메모를 추가하세요.</span>}
+                            {text ? text : <span className="text-zinc-600 italic">편집을 눌러 메모를 추가하세요.</span>}
                         </p>
                     )}
                 </div>
