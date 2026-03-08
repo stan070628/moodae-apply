@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import json
+import markdown
 
 SAVE_FILE = os.path.join("data", "application_save.json")
 
@@ -49,11 +50,42 @@ with st.container(border=True):
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-st.markdown("### 📝 세부 사업 계획 (Step 3)")
+st.markdown("""
+<!-- 에디터 참고: "5. AI버전 관리자 설정"의 문장 구조, 글자 크기 등 레이아웃을 그대로 적용할 것 -->
+### 📝 세부 사업 계획 (Step 3)
+
+본 사업의 핵심이 되는 세부적인 실행 계획 및 목표 사항입니다.
+
+**[목표]**
+본 프로젝트가 달성하고자 하는 궁극적인 목표와 정성/정량적 기대수준을 명시합니다.
+
+**[수행방법]**
+목표 달성을 위한 구체적인 프로세스, 인력 활용 계획 및 타임라인을 나타냅니다.
+
+**[예상성과]**
+프로젝트 종료 후 예상되는 직접적인 기대효과 및 수치화 가능한 아웃풋입니다.
+""", unsafe_allow_html=True)
+
 if app_data['proposal_text']:
-    formatted_text = app_data['proposal_text'].replace('\n', '<br>')
+    # 마크다운을 HTML로 변환 (**, #, 등의 마크다운 문법을 올바르게 렌더링)
+    html_content = markdown.markdown(
+        app_data['proposal_text'],
+        extensions=['extra', 'nl2br', 'sane_lists']
+    )
     st.markdown(
-        f"<div style='line-height: 1.8; margin-top: 10px; padding: 15px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.05); color: #e0e0e0;'>{formatted_text}</div>",
+        f"""<div style='line-height: 1.8; margin-top: 10px; padding: 20px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.05); color: #e0e0e0;'>
+            <style>
+                .md-content h1, .md-content h2, .md-content h3 {{ color: #3b82f6; margin-top: 1em; margin-bottom: 0.5em; }}
+                .md-content h1 {{ font-size: 1.5em; border-bottom: 1px solid #333; padding-bottom: 0.3em; }}
+                .md-content h2 {{ font-size: 1.3em; }}
+                .md-content h3 {{ font-size: 1.1em; }}
+                .md-content strong {{ color: #60a5fa; }}
+                .md-content ul, .md-content ol {{ margin-left: 1.5em; margin-bottom: 1em; }}
+                .md-content li {{ margin-bottom: 0.3em; }}
+                .md-content p {{ margin-bottom: 0.8em; }}
+            </style>
+            <div class="md-content">{html_content}</div>
+        </div>""",
         unsafe_allow_html=True
     )
 else:

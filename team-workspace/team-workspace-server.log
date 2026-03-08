@@ -1,0 +1,12 @@
+
+> team-workspace@0.1.0 dev
+> next dev -p 3002
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3002
+- Network:       http://192.168.0.174:3002
+
+✓ Starting...
+✓ Ready in 666ms
+ GET / 200 in 318ms (compile: 264ms, render: 55ms)
+ GET /api/workspace 200 in 59ms (compile: 46ms, render: 12ms)

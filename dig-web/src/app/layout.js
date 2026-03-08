@@ -1,6 +1,7 @@
 import "./globals.css";
 import SmoothScroll from "@/components/SmoothScroll";
 import CustomCursor from "@/components/CustomCursor";
+import ApiConfig from "@/components/ApiConfig";
 
 export const metadata = {
   title: "DIG : 당신이 부르면 공연이 시작됩니다",
@@ -14,6 +15,7 @@ export default function RootLayout({ children }) {
         <SmoothScroll>
           <CustomCursor />
           {children}
+          <ApiConfig />
         </SmoothScroll>
       </body>
     </html>

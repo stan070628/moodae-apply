@@ -65,6 +65,7 @@ with st.sidebar:
                 
     st.session_state.current_api_key = keys.get(current_key_name, "")
     st.session_state.api_provider = current_key_name
+    st.session_state.api_keys = keys
         
     st.divider()
     st.caption("※ API Key는 로컬스토리지(api_keys.json)에만 암호화 없이 저장되므로 주의 바랍니다.")
@@ -75,13 +76,8 @@ with st.sidebar:
 pg_write = st.Page("domain/proposal/write_form.py", title="1. 공모 신청서 작성", icon="📝")
 pg_view = st.Page("domain/proposal/view_full.py", title="2. 전체 제출 내용 보기", icon="📄")
 pg_diag = st.Page("domain/evaluation/ai_diagnostic.py", title="3. AI 예비 진단 (접수자용)", icon="🤖")
-pg_dash = st.Page("domain/evaluation/eval_dashboard.py", title="4. 심사위원 평가 보드", icon="📊")
-pg_admin = st.Page("domain/admin/version_manager.py", title="5. AI 버전 관리자 설정", icon="⚙️")
 
-pg = st.navigation({
-    "접수자 메뉴": [pg_write, pg_view, pg_diag],
-    "심사관/관리자 메뉴": [pg_dash, pg_admin]
-})
+pg = st.navigation([pg_write, pg_view, pg_diag])
 
 from ui.components import apply_common_styles
 try:
