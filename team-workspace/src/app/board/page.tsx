@@ -167,7 +167,11 @@ export default function BoardPage() {
 
     const selectedItem = items.find((i) => i.id === selectedItemId) || null;
 
-    if (!ready) return null;
+    if (!ready) return (
+        <div className="h-screen flex items-center justify-center bg-[#060608]">
+            <div className="w-8 h-8 rounded-full border-2 border-[#6C5CE7]/20 border-t-[#6C5CE7] animate-spin" />
+        </div>
+    );
 
     return (
         <div className="h-screen flex flex-col overflow-hidden">

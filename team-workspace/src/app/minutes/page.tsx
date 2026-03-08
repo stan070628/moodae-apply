@@ -26,7 +26,11 @@ export default function MinutesPage() {
         return () => unsub();
     }, []);
 
-    if (!ready) return null;
+    if (!ready) return (
+        <div className="h-screen flex items-center justify-center bg-[#060608]">
+            <div className="w-8 h-8 rounded-full border-2 border-[#6C5CE7]/20 border-t-[#6C5CE7] animate-spin" />
+        </div>
+    );
 
     return (
         <div className="min-h-screen">
