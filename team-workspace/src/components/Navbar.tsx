@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useApp } from "@/components/AppProvider";
+import { Bell, BellOff } from "lucide-react";
 
 const NAV_ITEMS = [
     { href: "/", label: "대시보드", icon: "📊" },
@@ -13,7 +14,7 @@ const NAV_ITEMS = [
 
 export default function Navbar() {
     const pathname = usePathname();
-    const { nickname, setNickname } = useApp();
+    const { nickname, setNickname, pushEnabled, requestPush, disablePush } = useApp();
     const [editing, setEditing] = useState(false);
     const [tempName, setTempName] = useState("");
 
@@ -63,6 +64,17 @@ export default function Navbar() {
                             );
                         })}
                     </div>
+
+                    {/* Push 알림 토글 */}
+                    {nickname && (
+                        <button
+                            onClick={() => pushEnabled ? disablePush() : requestPush()}
+                            title={pushEnabled ? "알림 끄기" : "알림 켜기"}
+                            className={`p-2 rounded-lg transition-colors min-h-[44px] ${pushEnabled ? "text-[var(--color-brand)] hover:bg-[var(--color-brand)]/10" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"}`}
+                        >
+                            {pushEnabled ? <Bell size={18} /> : <BellOff size={18} />}
+                        </button>
+                    )}
 
                     {/* Nickname */}
                     {nickname && (

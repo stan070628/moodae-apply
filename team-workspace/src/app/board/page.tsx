@@ -87,6 +87,13 @@ export default function BoardPage() {
         return () => window.removeEventListener("resize", check);
     }, []);
 
+    // 알림 클릭으로 진입 시 ?item= 파라미터로 자동 선택
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const itemId = params.get("item");
+        if (itemId) setSelectedItemId(Number(itemId));
+    }, []);
+
     // WBS 아이템 단일 필드 업데이트
     const handleUpdateItem = useCallback((itemId: number, updates: Partial<WBSItem>) => {
         updateDoc(doc(db, "wbs", String(itemId)), updates as Record<string, unknown>);
@@ -125,7 +132,7 @@ export default function BoardPage() {
             isSystem: false,
             createdAt: serverTimestamp(),
         });
-        // 멘션된 유저의 뱃지 카운트 증가
+        // 멘션된 유저의 뱃지 카운트 증가 + 푸시 알림
         if (mentions.length > 0) {
             const updateData: Record<string, unknown> = {};
             mentions.forEach((m) => {
@@ -140,8 +147,15 @@ export default function BoardPage() {
             if (Object.keys(updateData).length > 0) {
                 updateDoc(doc(db, "wbs", String(selectedItemId)), updateData);
             }
+            // 멘션 푸시 알림 전송
+            const itemName = items.find((i) => i.id === selectedItemId)?.item || "";
+            fetch("/api/notify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mentions, senderName: author, itemName, text, itemId: selectedItemId }),
+            }).catch(() => {});
         }
-    }, [selectedItemId]);
+    }, [selectedItemId, items]);
 
     // 회의록 생성
     const handleGenerateMinutes = useCallback(async (selectedMsgs: ChatMessage[]) => {

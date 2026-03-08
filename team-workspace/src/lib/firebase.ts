@@ -1,5 +1,6 @@
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getMessaging, type Messaging } from "firebase/messaging";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,3 +13,17 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const db = getFirestore(app);
+
+// messaging은 브라우저에서만 사용 가능
+let _messaging: Messaging | null = null;
+export function getFirebaseMessaging(): Messaging | null {
+    if (typeof window === "undefined") return null;
+    if (!_messaging) {
+        try {
+            _messaging = getMessaging(getApp());
+        } catch {
+            return null;
+        }
+    }
+    return _messaging;
+}

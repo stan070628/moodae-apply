@@ -3,13 +3,23 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import NicknameModal from "@/components/modals/NicknameModal";
 import InstallBanner from "@/components/InstallBanner";
+import { useFCM } from "@/lib/useFCM";
 
 interface AppContextType {
     nickname: string;
     setNickname: (name: string) => void;
+    pushEnabled: boolean;
+    requestPush: () => Promise<void>;
+    disablePush: () => Promise<void>;
 }
 
-const AppContext = createContext<AppContextType>({ nickname: "", setNickname: () => { } });
+const AppContext = createContext<AppContextType>({
+    nickname: "",
+    setNickname: () => { },
+    pushEnabled: false,
+    requestPush: async () => { },
+    disablePush: async () => { },
+});
 
 export function useApp() {
     return useContext(AppContext);
@@ -18,6 +28,7 @@ export function useApp() {
 export default function AppProvider({ children }: { children: ReactNode }) {
     const [nickname, setNicknameState] = useState<string>("");
     const [mounted, setMounted] = useState(false);
+    const { pushEnabled, requestPush, disablePush } = useFCM(nickname);
 
     useEffect(() => {
         const saved = localStorage.getItem("indig-nickname");
@@ -33,7 +44,7 @@ export default function AppProvider({ children }: { children: ReactNode }) {
     if (!mounted) return null;
 
     return (
-        <AppContext.Provider value={{ nickname, setNickname }}>
+        <AppContext.Provider value={{ nickname, setNickname, pushEnabled, requestPush, disablePush }}>
             {!nickname && <NicknameModal onSave={setNickname} />}
             {children}
             <InstallBanner />
