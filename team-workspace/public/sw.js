@@ -1,4 +1,4 @@
-const CACHE_NAME = "indig-collab-v1";
+const CACHE_NAME = "indig-collab-v2";
 const STATIC_ASSETS = [
     "/",
     "/board",
