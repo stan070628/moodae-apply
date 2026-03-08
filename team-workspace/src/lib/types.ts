@@ -20,7 +20,7 @@ export interface WBSItem {
 }
 
 export interface ChatMessage {
-    id: number;
+    id: string;
     author: string;
     text: string;
     time: string;
@@ -28,7 +28,7 @@ export interface ChatMessage {
 }
 
 export interface Minutes {
-    id: number;
+    id: string;
     itemId: number;
     itemName: string;
     content: string;

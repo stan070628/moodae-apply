@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { WBSItem, Status, ChatMessage, Minutes } from "@/lib/types";
+import type { WBSItem, Status } from "@/lib/types";
 import { TEAM, CATEGORIES } from "@/lib/data";
-import { dDayLabel, dDayColor, statusLabel, statusColor, formatDate } from "@/lib/utils";
+import { dDayLabel, dDayColor, statusColor } from "@/lib/utils";
 import RevertModal from "@/components/modals/RevertModal";
 import HistoryModal from "@/components/modals/HistoryModal";
 import AddItemModal from "@/components/modals/AddItemModal";
@@ -11,24 +11,22 @@ import DeleteConfirmModal from "@/components/modals/DeleteConfirmModal";
 
 interface WBSBoardProps {
     items: WBSItem[];
-    setItems: React.Dispatch<React.SetStateAction<WBSItem[]>>;
-    chatMap: Record<number, ChatMessage[]>;
-    setChatMap: React.Dispatch<React.SetStateAction<Record<number, ChatMessage[]>>>;
+    onUpdateItem: (itemId: number, updates: Partial<WBSItem>) => void;
+    onAddItem: (item: { cat: string; item: string; summary: string; assignee: string; due: string; status: Status }) => void;
+    onDeleteItem: (itemId: number) => void;
+    onSystemMessage: (itemId: number, text: string) => void;
     selectedItemId: number | null;
     setSelectedItemId: (id: number | null) => void;
-    nextMsgId: number;
-    setNextMsgId: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export default function WBSBoard({
     items,
-    setItems,
-    chatMap,
-    setChatMap,
+    onUpdateItem,
+    onAddItem,
+    onDeleteItem,
+    onSystemMessage,
     selectedItemId,
     setSelectedItemId,
-    nextMsgId,
-    setNextMsgId,
 }: WBSBoardProps) {
     const [filterCat, setFilterCat] = useState<string>("all");
     const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -53,15 +51,12 @@ export default function WBSBoard({
         const item = items.find((i) => i.id === itemId);
         if (!item) return;
 
-        // If changing FROM confirmed, require revert reason
         if (item.status === "confirmed" && newStatus !== "confirmed") {
             setRevertPending({ itemId, to: newStatus });
             return;
         }
 
-        setItems((prev) =>
-            prev.map((i) => (i.id === itemId ? { ...i, status: newStatus } : i))
-        );
+        onUpdateItem(itemId, { status: newStatus });
     };
 
     const handleRevertConfirm = (reason: string, by: string) => {
@@ -70,61 +65,34 @@ export default function WBSBoard({
         if (!item) return;
 
         const now = new Date().toISOString();
+        onUpdateItem(revertPending.itemId, {
+            status: revertPending.to,
+            history: [
+                ...item.history,
+                { from: "confirmed" as Status, to: revertPending.to, reason, by, at: now },
+            ],
+        });
 
-        // Update item status and add history
-        setItems((prev) =>
-            prev.map((i) =>
-                i.id === revertPending.itemId
-                    ? {
-                        ...i,
-                        status: revertPending.to,
-                        history: [
-                            ...i.history,
-                            { from: "confirmed", to: revertPending.to, reason, by, at: now },
-                        ],
-                    }
-                    : i
-            )
-        );
-
-        // Add system message to chat
-        const sysMsg: ChatMessage = {
-            id: nextMsgId,
-            author: "시스템",
-            text: `${by}님이 확정을 번복했습니다: ${reason}`,
-            time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
-            isSystem: true,
-        };
-        setNextMsgId((prev) => prev + 1);
-        setChatMap((prev) => ({
-            ...prev,
-            [revertPending.itemId]: [...(prev[revertPending.itemId] || []), sysMsg],
-        }));
-
+        onSystemMessage(revertPending.itemId, `${by}님이 확정을 번복했습니다: ${reason}`);
         setRevertPending(null);
     };
 
     const handleAssigneeChange = (itemId: number, assignee: string) => {
-        setItems((prev) =>
-            prev.map((i) => (i.id === itemId ? { ...i, assignee } : i))
-        );
+        onUpdateItem(itemId, { assignee });
     };
 
     const handleDueChange = (itemId: number, due: string) => {
-        setItems((prev) =>
-            prev.map((i) => (i.id === itemId ? { ...i, due } : i))
-        );
+        onUpdateItem(itemId, { due });
     };
 
     const handleAddItem = (newItem: { cat: string; item: string; summary: string; assignee: string; due: string; status: Status }) => {
-        const id = Math.max(...items.map((i) => i.id), 0) + 1;
-        setItems((prev) => [...prev, { ...newItem, id, history: [] }]);
+        onAddItem(newItem);
         setShowAddModal(false);
     };
 
     const handleDeleteItem = () => {
         if (deleteItemId === null) return;
-        setItems((prev) => prev.filter((i) => i.id !== deleteItemId));
+        onDeleteItem(deleteItemId);
         if (selectedItemId === deleteItemId) setSelectedItemId(null);
         setDeleteItemId(null);
     };
@@ -227,7 +195,6 @@ export default function WBSBoard({
                                             {item.summary && <span className="text-[13px] text-zinc-600 ml-2">— {item.summary}</span>}
                                         </div>
 
-                                        {/* History badge */}
                                         {item.history.length > 0 && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setHistoryItemId(item.id); }}
@@ -238,7 +205,6 @@ export default function WBSBoard({
                                             </button>
                                         )}
 
-                                        {/* Status */}
                                         <select
                                             value={item.status}
                                             onChange={(e) => { e.stopPropagation(); handleStatusChange(item.id, e.target.value as Status); }}
@@ -250,7 +216,6 @@ export default function WBSBoard({
                                             <option value="discussion">논의필요</option>
                                         </select>
 
-                                        {/* Assignee */}
                                         <select
                                             value={item.assignee}
                                             onChange={(e) => { e.stopPropagation(); handleAssigneeChange(item.id, e.target.value); }}
@@ -263,7 +228,6 @@ export default function WBSBoard({
                                             ))}
                                         </select>
 
-                                        {/* Due */}
                                         <div className="flex items-center gap-1.5 flex-shrink-0">
                                             <input
                                                 type="date"
@@ -277,7 +241,6 @@ export default function WBSBoard({
                                             </span>
                                         </div>
 
-                                        {/* Delete */}
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setDeleteItemId(item.id); }}
                                             className="text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all text-xs flex-shrink-0"

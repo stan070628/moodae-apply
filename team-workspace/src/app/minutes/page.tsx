@@ -1,30 +1,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import MinutesArchive from "@/components/MinutesArchive";
 import type { Minutes } from "@/lib/types";
 
-function loadState<T>(key: string, fallback: T): T {
-    if (typeof window === "undefined") return fallback;
-    try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : fallback;
-    } catch {
-        return fallback;
-    }
-}
-
 export default function MinutesPage() {
     const [minutes, setMinutes] = useState<Minutes[]>([]);
-    const [mounted, setMounted] = useState(false);
+    const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        setMinutes(loadState("indig-minutes", []));
-        setMounted(true);
+        const unsub = onSnapshot(
+            query(collection(db, "minutes"), orderBy("createdAt", "asc")),
+            (snap) => {
+                const data: Minutes[] = snap.docs.map((d) => ({
+                    id: d.id,
+                    ...(d.data() as Omit<Minutes, "id">),
+                }));
+                setMinutes(data);
+                setReady(true);
+            }
+        );
+        return () => unsub();
     }, []);
 
-    if (!mounted) return null;
+    if (!ready) return null;
 
     return (
         <div className="min-h-screen">

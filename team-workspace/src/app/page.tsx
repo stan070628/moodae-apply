@@ -1,31 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import Dashboard from "@/components/Dashboard";
-import { INITIAL_WBS } from "@/lib/data";
 import type { WBSItem } from "@/lib/types";
 
-function loadState<T>(key: string, fallback: T): T {
-    if (typeof window === "undefined") return fallback;
-    try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : fallback;
-    } catch {
-        return fallback;
-    }
-}
-
 export default function DashboardPage() {
-    const [items, setItems] = useState<WBSItem[]>(INITIAL_WBS);
-    const [mounted, setMounted] = useState(false);
+    const [items, setItems] = useState<WBSItem[]>([]);
+    const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        setItems(loadState("indig-items", INITIAL_WBS));
-        setMounted(true);
+        const unsub = onSnapshot(collection(db, "wbs"), (snap) => {
+            const data = snap.docs.map((d) => d.data() as WBSItem);
+            setItems(data.sort((a, b) => a.id - b.id));
+            setReady(true);
+        });
+        return () => unsub();
     }, []);
 
-    if (!mounted) return null;
+    if (!ready) return null;
 
     return (
         <div className="min-h-screen">

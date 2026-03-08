@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+    collection, doc, onSnapshot, setDoc, deleteDoc,
+    addDoc, query, orderBy, serverTimestamp, updateDoc,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import WBSBoard from "@/components/WBSBoard";
 import ChatPanel from "@/components/ChatPanel";
@@ -8,33 +13,71 @@ import ChatPage from "@/components/ChatPage";
 import { INITIAL_WBS } from "@/lib/data";
 import type { WBSItem, ChatMessage, Minutes, Status } from "@/lib/types";
 
-function loadState<T>(key: string, fallback: T): T {
-    if (typeof window === "undefined") return fallback;
-    try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : fallback;
-    } catch {
-        return fallback;
-    }
-}
-
 export default function BoardPage() {
-    const [items, setItems] = useState<WBSItem[]>(() => loadState("indig-items", INITIAL_WBS));
-    const [chatMap, setChatMap] = useState<Record<number, ChatMessage[]>>(() => loadState("indig-chatMap", {}));
-    const [minutes, setMinutes] = useState<Minutes[]>(() => loadState("indig-minutes", []));
+    const [items, setItems] = useState<WBSItem[]>([]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [minutes, setMinutes] = useState<Minutes[]>([]);
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-    const [nextMsgId, setNextMsgId] = useState(() => loadState("indig-nextMsgId", 1));
-    const [nextMinutesId, setNextMinutesId] = useState(() => loadState("indig-nextMinutesId", 1));
     const [isMobile, setIsMobile] = useState(false);
     const [generatingMinutes, setGeneratingMinutes] = useState(false);
+    const [ready, setReady] = useState(false);
+    const initializedRef = useRef(false);
 
-    // Persist to localStorage
-    useEffect(() => { localStorage.setItem("indig-items", JSON.stringify(items)); }, [items]);
-    useEffect(() => { localStorage.setItem("indig-chatMap", JSON.stringify(chatMap)); }, [chatMap]);
-    useEffect(() => { localStorage.setItem("indig-minutes", JSON.stringify(minutes)); }, [minutes]);
-    useEffect(() => { localStorage.setItem("indig-nextMsgId", JSON.stringify(nextMsgId)); }, [nextMsgId]);
-    useEffect(() => { localStorage.setItem("indig-nextMinutesId", JSON.stringify(nextMinutesId)); }, [nextMinutesId]);
+    // WBS 아이템 구독 (실시간)
+    useEffect(() => {
+        const unsub = onSnapshot(collection(db, "wbs"), (snap) => {
+            // 최초 빈 상태면 초기 데이터 삽입
+            if (!initializedRef.current && snap.empty) {
+                initializedRef.current = true;
+                INITIAL_WBS.forEach((item) =>
+                    setDoc(doc(db, "wbs", String(item.id)), item)
+                );
+                return;
+            }
+            initializedRef.current = true;
+            const data = snap.docs.map((d) => d.data() as WBSItem);
+            setItems(data.sort((a, b) => a.id - b.id));
+            setReady(true);
+        });
+        return () => unsub();
+    }, []);
 
+    // 선택된 항목의 채팅 구독 (실시간)
+    useEffect(() => {
+        if (!selectedItemId) {
+            setMessages([]);
+            return;
+        }
+        const q = query(
+            collection(db, "chats", String(selectedItemId), "msgs"),
+            orderBy("createdAt", "asc")
+        );
+        const unsub = onSnapshot(q, (snap) => {
+            const msgs: ChatMessage[] = snap.docs.map((d) => ({
+                id: d.id,
+                ...(d.data() as Omit<ChatMessage, "id">),
+            }));
+            setMessages(msgs);
+        });
+        return () => unsub();
+    }, [selectedItemId]);
+
+    // 회의록 구독 (실시간)
+    useEffect(() => {
+        const unsub = onSnapshot(
+            query(collection(db, "minutes"), orderBy("createdAt", "asc")),
+            (snap) => {
+                const data: Minutes[] = snap.docs.map((d) => ({
+                    id: d.id,
+                    ...(d.data() as Omit<Minutes, "id">),
+                }));
+                setMinutes(data);
+            }
+        );
+        return () => unsub();
+    }, []);
+
+    // 모바일 감지
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
         check();
@@ -42,25 +85,48 @@ export default function BoardPage() {
         return () => window.removeEventListener("resize", check);
     }, []);
 
-    const selectedItem = items.find((i) => i.id === selectedItemId) || null;
-    const selectedMessages = selectedItemId ? (chatMap[selectedItemId] || []) : [];
+    // WBS 아이템 단일 필드 업데이트
+    const handleUpdateItem = useCallback((itemId: number, updates: Partial<WBSItem>) => {
+        updateDoc(doc(db, "wbs", String(itemId)), updates as Record<string, unknown>);
+    }, []);
 
-    const handleSendMessage = (text: string, author: string) => {
+    // WBS 아이템 추가
+    const handleAddItem = useCallback((newItem: { cat: string; item: string; summary: string; assignee: string; due: string; status: Status }) => {
+        const id = Math.max(...items.map((i) => i.id), 0) + 1;
+        setDoc(doc(db, "wbs", String(id)), { ...newItem, id, history: [] });
+    }, [items]);
+
+    // WBS 아이템 삭제
+    const handleDeleteItem = useCallback((itemId: number) => {
+        deleteDoc(doc(db, "wbs", String(itemId)));
+    }, []);
+
+    // 시스템 메시지 (번복 알림 등)
+    const handleSystemMessage = useCallback((itemId: number, text: string) => {
+        addDoc(collection(db, "chats", String(itemId), "msgs"), {
+            author: "시스템",
+            text,
+            time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+            isSystem: true,
+            createdAt: serverTimestamp(),
+        });
+    }, []);
+
+    // 채팅 메시지 전송
+    const handleSendMessage = useCallback((text: string, author: string) => {
         if (!selectedItemId) return;
-        const msg: ChatMessage = {
-            id: nextMsgId,
+        addDoc(collection(db, "chats", String(selectedItemId), "msgs"), {
             author,
             text,
             time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
-        };
-        setNextMsgId((prev) => prev + 1);
-        setChatMap((prev) => ({
-            ...prev,
-            [selectedItemId]: [...(prev[selectedItemId] || []), msg],
-        }));
-    };
+            isSystem: false,
+            createdAt: serverTimestamp(),
+        });
+    }, [selectedItemId]);
 
-    const handleGenerateMinutes = async (selectedMsgs: ChatMessage[]) => {
+    // 회의록 생성
+    const handleGenerateMinutes = useCallback(async (selectedMsgs: ChatMessage[]) => {
+        const selectedItem = items.find((i) => i.id === selectedItemId);
         if (!selectedItem) return;
         setGeneratingMinutes(true);
 
@@ -73,33 +139,22 @@ export default function BoardPage() {
                     messages: selectedMsgs.map((m) => ({ author: m.author, text: m.text })),
                 }),
             });
-
             const data = await res.json();
 
             if (data.minutes) {
-                const newMinutes: Minutes = {
-                    id: nextMinutesId,
+                await addDoc(collection(db, "minutes"), {
                     itemId: selectedItem.id,
                     itemName: selectedItem.item,
                     content: data.minutes,
                     createdAt: new Date().toISOString(),
-                };
-                setNextMinutesId((prev) => prev + 1);
-                setMinutes((prev) => [...prev, newMinutes]);
-
-                // Add system message
-                const sysMsg: ChatMessage = {
-                    id: nextMsgId,
+                });
+                await addDoc(collection(db, "chats", String(selectedItem.id), "msgs"), {
                     author: "시스템",
                     text: `회의록이 생성되었습니다. (${selectedMsgs.length}개 메시지 기반)`,
                     time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
                     isSystem: true,
-                };
-                setNextMsgId((prev) => prev + 1);
-                setChatMap((prev) => ({
-                    ...prev,
-                    [selectedItem.id]: [...(prev[selectedItem.id] || []), sysMsg],
-                }));
+                    createdAt: serverTimestamp(),
+                });
             } else {
                 alert(data.error || "회의록 생성 실패");
             }
@@ -108,17 +163,11 @@ export default function BoardPage() {
         } finally {
             setGeneratingMinutes(false);
         }
-    };
+    }, [items, selectedItemId]);
 
-    const handleUpdateItem = (updates: Partial<WBSItem>) => {
-        if (!selectedItemId) return;
-        setItems((prev) =>
-            prev.map((i) => (i.id === selectedItemId ? { ...i, ...updates } : i))
-        );
-    };
+    const selectedItem = items.find((i) => i.id === selectedItemId) || null;
 
-    // Store minutes in a way accessible by Dashboard (via shared state)
-    // For now, minutes state lives in the board page
+    if (!ready) return null;
 
     return (
         <div className="h-screen flex flex-col overflow-hidden">
@@ -134,13 +183,12 @@ export default function BoardPage() {
                         </div>
                         <WBSBoard
                             items={items}
-                            setItems={setItems}
-                            chatMap={chatMap}
-                            setChatMap={setChatMap}
+                            onUpdateItem={handleUpdateItem}
+                            onAddItem={handleAddItem}
+                            onDeleteItem={handleDeleteItem}
+                            onSystemMessage={handleSystemMessage}
                             selectedItemId={selectedItemId}
                             setSelectedItemId={setSelectedItemId}
-                            nextMsgId={nextMsgId}
-                            setNextMsgId={setNextMsgId}
                         />
                     </div>
                 </div>
@@ -150,7 +198,7 @@ export default function BoardPage() {
                     <div className="w-[48%] border-l border-[var(--color-border)] flex-shrink-0">
                         <ChatPanel
                             item={selectedItem}
-                            messages={selectedMessages}
+                            messages={messages}
                             minutes={minutes}
                             onSendMessage={handleSendMessage}
                             onGenerateMinutes={handleGenerateMinutes}
@@ -165,12 +213,12 @@ export default function BoardPage() {
             {selectedItem && isMobile && (
                 <ChatPage
                     item={selectedItem}
-                    messages={selectedMessages}
+                    messages={messages}
                     minutes={minutes}
                     onSendMessage={handleSendMessage}
                     onGenerateMinutes={handleGenerateMinutes}
                     onBack={() => setSelectedItemId(null)}
-                    onUpdateItem={handleUpdateItem}
+                    onUpdateItem={(updates) => handleUpdateItem(selectedItem.id, updates)}
                     generatingMinutes={generatingMinutes}
                 />
             )}

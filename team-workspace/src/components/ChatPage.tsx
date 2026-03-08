@@ -30,7 +30,7 @@ export default function ChatPage({
     const { nickname } = useApp();
     const [text, setText] = useState("");
     const [selectMode, setSelectMode] = useState(false);
-    const [selected, setSelected] = useState<Set<number>>(new Set());
+    const [selected, setSelected] = useState<Set<string>>(new Set());
     const [showInfo, setShowInfo] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +44,7 @@ export default function ChatPage({
         setText("");
     };
 
-    const toggleSelect = (id: number) => {
+    const toggleSelect = (id: string) => {
         setSelected((prev) => {
             const next = new Set(prev);
             if (next.has(id)) next.delete(id);
