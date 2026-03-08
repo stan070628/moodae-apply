@@ -56,7 +56,7 @@ export default function ChatPage({
     const itemMinutes = minutes.filter((m) => m.itemId === item.id);
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--color-background)]">
+        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--color-background)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             {/* Top bar */}
             <div className="flex-shrink-0 border-b border-[var(--color-border)] px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
