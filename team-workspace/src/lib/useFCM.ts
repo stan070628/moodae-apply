@@ -16,13 +16,15 @@ export function useFCM(nickname: string) {
         try {
             const messaging = getFirebaseMessaging();
             if (!messaging) return false;
-            const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+            const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+            const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
             if (!token) return false;
             await setDoc(doc(db, "users", nickname), { fcmToken: token }, { merge: true });
             setPushEnabled(true);
             localStorage.setItem(STORAGE_KEY, "1");
             return true;
-        } catch {
+        } catch (err) {
+            console.error("[FCM] registerToken failed:", err);
             return false;
         }
     }, [nickname]);
