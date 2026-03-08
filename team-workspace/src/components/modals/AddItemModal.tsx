@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { Status } from "@/lib/types";
-import { TEAM, CATEGORIES } from "@/lib/data";
+import { CATEGORIES } from "@/lib/data";
+import { useApp } from "@/components/AppProvider";
 
 interface AddItemModalProps {
     onAdd: (item: { cat: string; item: string; summary: string; assignee: string; due: string; status: Status }) => void;
@@ -10,6 +11,7 @@ interface AddItemModalProps {
 }
 
 export default function AddItemModal({ onAdd, onCancel }: AddItemModalProps) {
+    const { team } = useApp();
     const [cat, setCat] = useState(CATEGORIES[0]);
     const [name, setName] = useState("");
     const [summary, setSummary] = useState("");
@@ -83,7 +85,7 @@ export default function AddItemModal({ onAdd, onCancel }: AddItemModalProps) {
                                 className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-[var(--color-brand)]"
                             >
                                 <option value="">미배정</option>
-                                {TEAM.map((m) => (
+                                {team.map((m) => (
                                     <option key={m} value={m}>{m}</option>
                                 ))}
                             </select>

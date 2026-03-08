@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Status } from "@/lib/types";
+import { useApp } from "@/components/AppProvider";
 
 interface RevertModalProps {
     itemName: string;
@@ -11,11 +12,10 @@ interface RevertModalProps {
     onCancel: () => void;
 }
 
-const TEAM = ["Stan", "Jay", "Mia"];
-
 export default function RevertModal({ itemName, from, to, onConfirm, onCancel }: RevertModalProps) {
+    const { team } = useApp();
     const [reason, setReason] = useState("");
-    const [by, setBy] = useState(TEAM[0]);
+    const [by, setBy] = useState("");
 
     const statusLabel = (s: Status) => {
         switch (s) {
@@ -46,7 +46,7 @@ export default function RevertModal({ itemName, from, to, onConfirm, onCancel }:
                             onChange={(e) => setBy(e.target.value)}
                             className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-[var(--color-brand)]"
                         >
-                            {TEAM.map((m) => (
+                            {team.map((m) => (
                                 <option key={m} value={m}>{m}</option>
                             ))}
                         </select>

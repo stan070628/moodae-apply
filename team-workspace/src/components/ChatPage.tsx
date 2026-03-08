@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { ChatMessage, WBSItem, Minutes, Status } from "@/lib/types";
 import { statusLabel, statusColor, dDayLabel, dDayColor } from "@/lib/utils";
-import { TEAM } from "@/lib/data";
 import { useApp } from "@/components/AppProvider";
 import MentionInput from "@/components/MentionInput";
 
@@ -37,7 +36,7 @@ export default function ChatPage({
     onUpdateItem,
     generatingMinutes = false,
 }: ChatPageProps) {
-    const { nickname } = useApp();
+    const { nickname, team } = useApp();
     const [selectMode, setSelectMode] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [showInfo, setShowInfo] = useState(false);
@@ -106,7 +105,7 @@ export default function ChatPage({
                                 className="mt-1 w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[15px] text-zinc-200 focus:outline-none focus:border-[var(--color-brand)] min-h-[44px]"
                             >
                                 <option value="">미배정</option>
-                                {TEAM.map((m) => (
+                                {team.map((m) => (
                                     <option key={m} value={m}>{m}</option>
                                 ))}
                             </select>
