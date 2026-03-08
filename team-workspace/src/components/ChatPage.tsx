@@ -5,6 +5,7 @@ import type { ChatMessage, WBSItem, Minutes, Status } from "@/lib/types";
 import { statusLabel, statusColor, dDayLabel, dDayColor } from "@/lib/utils";
 import { useApp } from "@/components/AppProvider";
 import MentionInput from "@/components/MentionInput";
+import PinnedMemo from "@/components/PinnedMemo";
 
 interface ChatPageProps {
     item: WBSItem;
@@ -80,6 +81,9 @@ export default function ChatPage({
                     ℹ️
                 </button>
             </div>
+
+            {/* 고정 메모 */}
+            <PinnedMemo itemId={item.id} />
 
             {/* Info panel (collapsible) */}
             {showInfo && (
