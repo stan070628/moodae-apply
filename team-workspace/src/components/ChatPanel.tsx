@@ -5,6 +5,7 @@ import type { ChatMessage, WBSItem, Minutes } from "@/lib/types";
 import { statusLabel, statusColor, dDayLabel, dDayColor } from "@/lib/utils";
 import { useApp } from "@/components/AppProvider";
 import MentionInput from "@/components/MentionInput";
+import PinnedMemo from "@/components/PinnedMemo";
 
 interface ChatPanelProps {
     item: WBSItem;
@@ -70,6 +71,9 @@ export default function ChatPanel({
                     <span className={dDayColor(item.due)}>{dDayLabel(item.due)}</span>
                 </div>
             </div>
+
+            {/* 고정 메모 */}
+            <PinnedMemo itemId={item.id} />
 
             {/* Minutes preview */}
             {itemMinutes.length > 0 && (
