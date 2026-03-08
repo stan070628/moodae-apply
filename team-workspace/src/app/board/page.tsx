@@ -157,6 +157,21 @@ export default function BoardPage() {
         }
     }, [selectedItemId, items, team]);
 
+    // 채팅 메시지 편집
+    const handleEditMessage = useCallback((msgId: string, newText: string) => {
+        if (!selectedItemId) return;
+        updateDoc(doc(db, "chats", String(selectedItemId), "msgs", msgId), {
+            text: newText,
+            edited: true,
+        });
+    }, [selectedItemId]);
+
+    // 채팅 메시지 삭제
+    const handleDeleteMessages = useCallback((msgIds: string[]) => {
+        if (!selectedItemId) return;
+        msgIds.forEach((id) => deleteDoc(doc(db, "chats", String(selectedItemId), "msgs", id)));
+    }, [selectedItemId]);
+
     // 회의록 생성
     const handleGenerateMinutes = useCallback(async (selectedMsgs: ChatMessage[]) => {
         const selectedItem = items.find((i) => i.id === selectedItemId);
@@ -248,6 +263,8 @@ export default function BoardPage() {
                             minutes={minutes}
                             onSendMessage={handleSendMessage}
                             onGenerateMinutes={handleGenerateMinutes}
+                            onEditMessage={handleEditMessage}
+                            onDeleteMessages={handleDeleteMessages}
                             onClose={() => setSelectedItemId(null)}
                             generatingMinutes={generatingMinutes}
                         />
@@ -263,6 +280,8 @@ export default function BoardPage() {
                     minutes={minutes}
                     onSendMessage={handleSendMessage}
                     onGenerateMinutes={handleGenerateMinutes}
+                    onEditMessage={handleEditMessage}
+                    onDeleteMessages={handleDeleteMessages}
                     onBack={() => setSelectedItemId(null)}
                     onUpdateItem={(updates) => handleUpdateItem(selectedItem.id, updates)}
                     generatingMinutes={generatingMinutes}

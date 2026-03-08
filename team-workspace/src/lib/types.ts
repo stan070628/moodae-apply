@@ -27,6 +27,7 @@ export interface ChatMessage {
     time: string;
     isSystem?: boolean;
     mentions?: string[];
+    edited?: boolean;
 }
 
 export interface Minutes {

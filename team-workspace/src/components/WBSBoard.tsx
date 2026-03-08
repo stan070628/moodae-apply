@@ -195,7 +195,9 @@ export default function WBSBoard({
                                                 <option value="discussion">논의필요</option>
                                             </select>
                                             <span className="text-zinc-500">{item.assignee || "미배정"}</span>
-                                            <span className={`${dDayColor(item.due)} ml-auto`}>{dDayLabel(item.due)}</span>
+                                            {item.status !== "confirmed" && (
+                                                <span className={`${dDayColor(item.due)} ml-auto`}>{dDayLabel(item.due)}</span>
+                                            )}
                                         </div>
                                     </div>
 
@@ -252,9 +254,11 @@ export default function WBSBoard({
                                                 onClick={(e) => e.stopPropagation()}
                                                 className="bg-transparent border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-[13px] text-zinc-400 focus:outline-none focus:border-[var(--color-brand)] w-[130px]"
                                             />
-                                            <span className={`text-[14px] font-bold ${dDayColor(item.due)} w-12 text-right`}>
-                                                {dDayLabel(item.due)}
-                                            </span>
+                                            {item.status !== "confirmed" && (
+                                                <span className={`text-[14px] font-bold ${dDayColor(item.due)} w-12 text-right`}>
+                                                    {dDayLabel(item.due)}
+                                                </span>
+                                            )}
                                         </div>
 
                                         <button

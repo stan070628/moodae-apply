@@ -13,6 +13,8 @@ interface ChatPageProps {
     minutes: Minutes[];
     onSendMessage: (text: string, author: string, mentions: string[]) => void;
     onGenerateMinutes: (selectedMessages: ChatMessage[]) => void;
+    onEditMessage: (msgId: string, newText: string) => void;
+    onDeleteMessages: (msgIds: string[]) => void;
     onBack: () => void;
     onUpdateItem: (updates: Partial<WBSItem>) => void;
     generatingMinutes?: boolean;
@@ -33,6 +35,8 @@ export default function ChatPage({
     minutes,
     onSendMessage,
     onGenerateMinutes,
+    onEditMessage,
+    onDeleteMessages,
     onBack,
     onUpdateItem,
     generatingMinutes = false,
@@ -40,6 +44,7 @@ export default function ChatPage({
     const { nickname, team } = useApp();
     const [selectMode, setSelectMode] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [editingMsg, setEditingMsg] = useState<{ id: string; text: string } | null>(null);
     const [showInfo, setShowInfo] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +61,35 @@ export default function ChatPage({
         });
     };
 
+    const cancelSelect = () => {
+        setSelectMode(false);
+        setSelected(new Set());
+        setEditingMsg(null);
+    };
+
+    const handleEditClick = () => {
+        const msgId = [...selected][0];
+        const msg = messages.find((m) => m.id === msgId);
+        if (msg && !msg.isSystem) setEditingMsg({ id: msgId, text: msg.text });
+    };
+
+    const handleEditSave = () => {
+        if (!editingMsg) return;
+        onEditMessage(editingMsg.id, editingMsg.text);
+        cancelSelect();
+    };
+
+    const handleDeleteClick = () => {
+        if (!window.confirm(`${selected.size}개 메시지를 삭제하시겠습니까?`)) return;
+        onDeleteMessages([...selected]);
+        cancelSelect();
+    };
+
     const itemMinutes = minutes.filter((m) => m.itemId === item.id);
+    const selectedNonSystem = [...selected].filter((id) => {
+        const msg = messages.find((m) => m.id === id);
+        return msg && !msg.isSystem;
+    });
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col bg-[var(--color-background)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
@@ -70,7 +103,9 @@ export default function ChatPage({
                         </h3>
                         <div className="flex items-center gap-2 text-[13px] mt-0.5">
                             <span className={`px-2 py-0.5 rounded-full border ${statusColor(item.status)}`}>{statusLabel(item.status)}</span>
-                            <span className={dDayColor(item.due)}>{dDayLabel(item.due)}</span>
+                            {item.status !== "confirmed" && (
+                                <span className={dDayColor(item.due)}>{dDayLabel(item.due)}</span>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -184,6 +219,7 @@ export default function ChatPage({
                                         <div className="flex items-baseline gap-2 mb-0.5">
                                             <span className="text-[15px] font-semibold text-zinc-200">{msg.author}</span>
                                             <span className="text-[13px] text-zinc-600">{msg.time}</span>
+                                            {msg.edited && <span className="text-[11px] text-zinc-600 italic">수정됨</span>}
                                             {isMentioned && <span className="text-[11px] text-[#A855F7] font-medium">멘션됨</span>}
                                         </div>
                                         <p className="text-[15px] text-zinc-300 break-words">{parseMention(msg.text)}</p>
@@ -199,29 +235,74 @@ export default function ChatPage({
             {/* Select mode toolbar */}
             {selectMode && (
                 <div className="flex-shrink-0 border-t border-[var(--color-border)] p-3 bg-[var(--color-brand)]/5">
-                    <div className="flex items-center justify-between">
-                        <span className="text-[13px] text-zinc-400">{selected.size}개 선택됨</span>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => { setSelectMode(false); setSelected(new Set()); }}
-                                className="px-3 py-2 text-[14px] rounded-lg border border-[var(--color-border)] text-zinc-400 hover:text-zinc-200 transition-colors min-h-[44px]"
-                            >
-                                취소
-                            </button>
-                            <button
-                                onClick={() => {
-                                    const selMsgs = messages.filter((m) => selected.has(m.id));
-                                    onGenerateMinutes(selMsgs);
-                                    setSelectMode(false);
-                                    setSelected(new Set());
-                                }}
-                                disabled={selected.size < 2 || generatingMinutes}
-                                className="px-3 py-2 text-[14px] rounded-lg bg-[var(--color-brand)]/20 text-[var(--color-brand)] border border-[var(--color-brand)]/30 hover:bg-[var(--color-brand)]/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
-                            >
-                                {generatingMinutes ? "생성 중..." : "회의록 생성"}
-                            </button>
+                    {editingMsg ? (
+                        /* 편집 모드 */
+                        <div className="space-y-2">
+                            <textarea
+                                value={editingMsg.text}
+                                onChange={(e) => setEditingMsg({ ...editingMsg, text: e.target.value })}
+                                rows={2}
+                                className="w-full bg-[var(--color-background)] border border-[var(--color-brand)]/50 rounded-lg px-3 py-2 text-[14px] text-zinc-200 focus:outline-none focus:border-[var(--color-brand)] resize-none"
+                                autoFocus
+                            />
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    onClick={() => setEditingMsg(null)}
+                                    className="px-3 py-2 text-[14px] rounded-lg border border-[var(--color-border)] text-zinc-400 hover:text-zinc-200 transition-colors min-h-[44px]"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    onClick={handleEditSave}
+                                    className="px-3 py-2 text-[14px] rounded-lg bg-[var(--color-brand)]/20 text-[var(--color-brand)] border border-[var(--color-brand)]/30 hover:bg-[var(--color-brand)]/30 transition-colors min-h-[44px]"
+                                >
+                                    저장
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        /* 선택 모드 툴바 */
+                        <div className="flex items-center justify-between">
+                            <span className="text-[13px] text-zinc-400">{selectedNonSystem.length}개 선택됨</span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={cancelSelect}
+                                    className="px-3 py-2 text-[14px] rounded-lg border border-[var(--color-border)] text-zinc-400 hover:text-zinc-200 transition-colors min-h-[44px]"
+                                >
+                                    취소
+                                </button>
+                                {selectedNonSystem.length === 1 && (
+                                    <button
+                                        onClick={handleEditClick}
+                                        className="px-3 py-2 text-[14px] rounded-lg bg-zinc-700/50 text-zinc-300 border border-zinc-600/50 hover:bg-zinc-700 transition-colors min-h-[44px]"
+                                    >
+                                        편집
+                                    </button>
+                                )}
+                                {selectedNonSystem.length >= 1 && (
+                                    <button
+                                        onClick={handleDeleteClick}
+                                        className="px-3 py-2 text-[14px] rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors min-h-[44px]"
+                                    >
+                                        삭제
+                                    </button>
+                                )}
+                                {selectedNonSystem.length >= 2 && (
+                                    <button
+                                        onClick={() => {
+                                            const selMsgs = messages.filter((m) => selected.has(m.id));
+                                            onGenerateMinutes(selMsgs);
+                                            cancelSelect();
+                                        }}
+                                        disabled={generatingMinutes}
+                                        className="px-3 py-2 text-[14px] rounded-lg bg-[var(--color-brand)]/20 text-[var(--color-brand)] border border-[var(--color-brand)]/30 hover:bg-[var(--color-brand)]/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+                                    >
+                                        {generatingMinutes ? "생성 중..." : "회의록 생성"}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

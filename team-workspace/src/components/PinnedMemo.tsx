@@ -15,13 +15,21 @@ export default function PinnedMemo({ itemId }: PinnedMemoProps) {
     const [localText, setLocalText] = useState("");
     const [expanded, setExpanded] = useState(false);
     const [editing, setEditing] = useState(false);
+    const [hasError, setHasError] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
-        const unsub = onSnapshot(doc(db, "memos", String(itemId)), (snap) => {
-            const data = snap.data();
-            setText(data?.text ?? "");
-        });
+        setHasError(false);
+        const unsub = onSnapshot(
+            doc(db, "memos", String(itemId)),
+            (snap) => {
+                const data = snap.data();
+                setText(data?.text ?? "");
+            },
+            () => {
+                setHasError(true);
+            }
+        );
         return () => unsub();
     }, [itemId]);
 
@@ -56,11 +64,19 @@ export default function PinnedMemo({ itemId }: PinnedMemoProps) {
         ? text.length > 55 ? text.slice(0, 55) + "…" : text
         : "메모 없음";
 
+    if (hasError) {
+        return (
+            <div className="flex-shrink-0 border-b border-[var(--color-border)] bg-amber-500/5 px-4 py-2">
+                <span className="text-[12px] text-amber-400">📌 메모를 불러올 수 없습니다 (권한 확인 필요)</span>
+            </div>
+        );
+    }
+
     return (
-        <div className="flex-shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)]/60">
+        <div className="flex-shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
             {/* 헤더 행 — 항상 표시 */}
             <div
-                className="flex items-center gap-2 px-4 py-2 cursor-pointer select-none"
+                className="flex items-center gap-2 px-4 py-2 cursor-pointer select-none hover:bg-white/5 transition-colors"
                 onClick={toggle}
             >
                 <span className="text-[12px]">📌</span>
