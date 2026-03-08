@@ -25,8 +25,7 @@ export default function PinnedMemo({ itemId }: PinnedMemoProps) {
         return () => unsub();
     }, [itemId]);
 
-    const startEdit = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const startEdit = () => {
         setLocalText(text);
         setEditing(true);
         setExpanded(true);
@@ -48,6 +47,11 @@ export default function PinnedMemo({ itemId }: PinnedMemoProps) {
         setLocalText(text);
     };
 
+    const toggle = () => {
+        if (editing) return;
+        setExpanded((v) => !v);
+    };
+
     const preview = text
         ? text.length > 55 ? text.slice(0, 55) + "…" : text
         : "메모 없음";
@@ -57,24 +61,22 @@ export default function PinnedMemo({ itemId }: PinnedMemoProps) {
             {/* 헤더 행 — 항상 표시 */}
             <div
                 className="flex items-center gap-2 px-4 py-2 cursor-pointer select-none"
-                onClick={() => !editing && setExpanded((v) => !v)}
+                onClick={toggle}
             >
-                <span className="text-[12px] text-zinc-500">📌</span>
+                <span className="text-[12px]">📌</span>
                 <span className="flex-1 text-[13px] text-zinc-400 truncate leading-snug">
-                    {expanded && text ? text.split("\n")[0] : preview}
+                    {!expanded ? preview : (text ? text.split("\n")[0] : "메모 없음")}
                 </span>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                     {!editing && (
                         <button
-                            onClick={startEdit}
+                            onClick={(e) => { e.stopPropagation(); startEdit(); }}
                             className="text-[11px] text-zinc-500 hover:text-zinc-300 px-1.5 py-0.5 rounded hover:bg-white/10 transition-colors"
                         >
                             편집
                         </button>
                     )}
-                    <span
-                        className={`text-zinc-600 text-[11px] transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-                    >
+                    <span className={`text-zinc-500 text-[11px] transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}>
                         ▾
                     </span>
                 </div>
@@ -89,7 +91,7 @@ export default function PinnedMemo({ itemId }: PinnedMemoProps) {
                                 ref={textareaRef}
                                 value={localText}
                                 onChange={(e) => setLocalText(e.target.value)}
-                                rows={4}
+                                rows={6}
                                 className="w-full bg-[var(--color-background)] border border-[var(--color-brand)]/50 rounded-lg px-3 py-2 text-[13px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[var(--color-brand)] resize-none leading-relaxed"
                                 placeholder="의논 내용을 정리해두세요..."
                             />
@@ -109,12 +111,29 @@ export default function PinnedMemo({ itemId }: PinnedMemoProps) {
                             </div>
                         </>
                     ) : (
-                        <p
-                            onClick={startEdit}
-                            className="text-[13px] text-zinc-300 whitespace-pre-wrap cursor-text leading-relaxed"
-                        >
-                            {text ? text : <span className="text-zinc-600 italic">편집을 눌러 메모를 추가하세요.</span>}
-                        </p>
+                        <div className="max-h-48 overflow-y-auto rounded-lg bg-[var(--color-background)]/50 px-3 py-2">
+                            <p className="text-[13px] text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                                {text ? text : <span className="text-zinc-600 italic">편집을 눌러 메모를 추가하세요.</span>}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* 접기/편집 버튼 바 */}
+                    {!editing && (
+                        <div className="flex justify-between items-center mt-2">
+                            <button
+                                onClick={toggle}
+                                className="text-[12px] text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded hover:bg-white/5 transition-colors"
+                            >
+                                접기 ▲
+                            </button>
+                            <button
+                                onClick={startEdit}
+                                className="text-[12px] text-[var(--color-brand)] px-2 py-1 rounded bg-[var(--color-brand)]/10 hover:bg-[var(--color-brand)]/20 transition-colors"
+                            >
+                                편집
+                            </button>
+                        </div>
                     )}
                 </div>
             )}
