@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { TEAM } from "@/lib/data";
 
 // firebase-admin 초기화 (서버 전용)
 let adminInitialized = false;
@@ -36,11 +35,22 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Admin SDK not initialized" });
     }
 
-    // @ALL 처리 — 보낸 사람 제외한 전 팀원
+    const firestore = admin.firestore();
+
+    // @ALL 처리 — Firestore /users에서 전체 팀원 조회
+    const hasAll = (mentions as string[]).includes("ALL");
+    let allMembers: string[] = [];
+    if (hasAll) {
+        try {
+            const usersSnap = await firestore.collection("users").get();
+            allMembers = usersSnap.docs.map((d) => d.id);
+        } catch { /* ignore */ }
+    }
+
     const targets: string[] = [];
     (mentions as string[]).forEach((m) => {
         if (m === "ALL") {
-            TEAM.forEach((member) => {
+            allMembers.forEach((member) => {
                 if (member !== senderName && !targets.includes(member)) targets.push(member);
             });
         } else if (m !== senderName && !targets.includes(m)) {
@@ -51,7 +61,6 @@ export async function POST(req: NextRequest) {
     if (targets.length === 0) return NextResponse.json({ success: true, sent: 0 });
 
     // Firestore에서 FCM 토큰 조회
-    const firestore = admin.firestore();
     const tokens: string[] = [];
     await Promise.all(
         targets.map(async (nick) => {

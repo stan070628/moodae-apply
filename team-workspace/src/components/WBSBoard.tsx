@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { WBSItem, Status } from "@/lib/types";
-import { TEAM, CATEGORIES } from "@/lib/data";
+import { CATEGORIES } from "@/lib/data";
+import { useApp } from "@/components/AppProvider";
 import { dDayLabel, dDayColor, statusColor } from "@/lib/utils";
 import RevertModal from "@/components/modals/RevertModal";
 import HistoryModal from "@/components/modals/HistoryModal";
@@ -30,6 +31,7 @@ export default function WBSBoard({
     setSelectedItemId,
     nickname,
 }: WBSBoardProps) {
+    const { team } = useApp();
     const [filterCat, setFilterCat] = useState<string>("all");
     const [filterStatus, setFilterStatus] = useState<string>("all");
     const [revertPending, setRevertPending] = useState<{ itemId: number; to: Status } | null>(null);
@@ -237,7 +239,7 @@ export default function WBSBoard({
                                             className={`bg-transparent border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-[14px] focus:outline-none focus:border-[var(--color-brand)] w-24 flex-shrink-0 ${item.assignee ? "text-zinc-300" : "text-red-400"}`}
                                         >
                                             <option value="">미배정</option>
-                                            {TEAM.map((m) => (
+                                            {team.map((m) => (
                                                 <option key={m} value={m}>{m}</option>
                                             ))}
                                         </select>

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { TEAM } from "@/lib/data";
+import { useApp } from "@/components/AppProvider";
 
-const MENTION_OPTIONS = [...TEAM, "ALL"];
-
-export function extractMentions(text: string): string[] {
+export function extractMentions(text: string, team: string[]): string[] {
+    const valid = new Set([...team, "ALL"]);
     const matches = text.match(/@(\w+)/g) || [];
-    return matches.map((m) => m.slice(1)).filter((m) => MENTION_OPTIONS.includes(m));
+    return matches.map((m) => m.slice(1)).filter((m) => valid.has(m));
 }
 
 interface MentionInputProps {
@@ -16,6 +15,8 @@ interface MentionInputProps {
 }
 
 export default function MentionInput({ nickname, onSend }: MentionInputProps) {
+    const { team } = useApp();
+    const mentionOptions = [...team, "ALL"];
     const [text, setText] = useState("");
     const [mentionSearch, setMentionSearch] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +44,7 @@ export default function MentionInput({ nickname, onSend }: MentionInputProps) {
 
     const handleSend = () => {
         if (!text.trim()) return;
-        const mentions = extractMentions(text);
+        const mentions = extractMentions(text, team);
         onSend(text.trim(), mentions);
         setText("");
         setMentionSearch(null);
@@ -51,7 +52,7 @@ export default function MentionInput({ nickname, onSend }: MentionInputProps) {
 
     const filtered =
         mentionSearch !== null
-            ? MENTION_OPTIONS.filter((m) => m.toLowerCase().startsWith(mentionSearch))
+            ? mentionOptions.filter((m) => m.toLowerCase().startsWith(mentionSearch))
             : [];
 
     return (

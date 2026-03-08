@@ -10,12 +10,12 @@ import Navbar from "@/components/Navbar";
 import WBSBoard from "@/components/WBSBoard";
 import ChatPanel from "@/components/ChatPanel";
 import ChatPage from "@/components/ChatPage";
-import { INITIAL_WBS, TEAM } from "@/lib/data";
+import { INITIAL_WBS } from "@/lib/data";
 import { useApp } from "@/components/AppProvider";
 import type { WBSItem, ChatMessage, Minutes, Status } from "@/lib/types";
 
 export default function BoardPage() {
-    const { nickname } = useApp();
+    const { nickname, team } = useApp();
     const [items, setItems] = useState<WBSItem[]>([]);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [minutes, setMinutes] = useState<Minutes[]>([]);
@@ -137,7 +137,7 @@ export default function BoardPage() {
             const updateData: Record<string, unknown> = {};
             mentions.forEach((m) => {
                 if (m === "ALL") {
-                    TEAM.forEach((member) => {
+                    team.forEach((member) => {
                         if (member !== author) updateData[`mentionCounts.${member}`] = increment(1);
                     });
                 } else if (m !== author) {
@@ -155,7 +155,7 @@ export default function BoardPage() {
                 body: JSON.stringify({ mentions, senderName: author, itemName, text, itemId: selectedItemId }),
             }).catch(() => {});
         }
-    }, [selectedItemId, items]);
+    }, [selectedItemId, items, team]);
 
     // 회의록 생성
     const handleGenerateMinutes = useCallback(async (selectedMsgs: ChatMessage[]) => {
