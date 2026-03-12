@@ -172,7 +172,10 @@ export default function ChatPage({
             {itemMinutes.length > 0 && (
                 <div className="flex-shrink-0 border-b border-[var(--color-border)] p-3 max-h-32 overflow-y-auto">
                     <p className="text-[13px] font-bold text-zinc-500 uppercase tracking-wider mb-1.5">📝 최근 회의록</p>
-                    {itemMinutes.slice(-1).map((m) => (
+                    {itemMinutes
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .slice(0, 1)
+                        .map((m) => (
                         <div key={m.id} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-2.5 text-[13px] text-zinc-300 whitespace-pre-wrap">
                             {m.content.substring(0, 150)}{m.content.length > 150 ? "..." : ""}
                         </div>
@@ -222,9 +225,9 @@ export default function ChatPage({
                                         <div className="flex items-baseline gap-2 mb-0.5">
                                             <span className="text-[15px] font-semibold text-zinc-200">{msg.author}</span>
                                             <span className="text-[13px] text-zinc-600">
-                                                {msg.createdAt?.seconds 
-                                                    ? formatDateTime(new Date(msg.createdAt.seconds * 1000)) 
-                                                    : msg.time}
+                                                {msg.createdAt?.seconds
+                                                    ? formatDateTime(new Date(msg.createdAt.seconds * 1000))
+                                                    : formatDateTime(msg.time || new Date())}
                                             </span>
                                             {msg.edited && <span className="text-[11px] text-zinc-600 italic">수정됨</span>}
                                             {isMentioned && <span className="text-[11px] text-[#A855F7] font-medium">멘션됨</span>}
