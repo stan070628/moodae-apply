@@ -66,6 +66,7 @@ ${chatLog}
 
         if (!response.ok) {
             const err = await response.text();
+            console.error("Anthropic API Error:", response.status, err);
             return NextResponse.json(
                 { error: `Claude API 오류: ${response.status}`, details: err },
                 { status: response.status }

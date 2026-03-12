@@ -218,7 +218,7 @@ export default function BoardPage() {
                     createdAt: serverTimestamp(),
                 });
             } else {
-                alert(`회의록 생성 실패: ${data.error || "알 수 없는 오류"}`);
+                alert(`회의록 생성 실패: ${data.error || "알 수 없는 오류"}\n상세: ${data.details || ""}`);
             }
         } catch (e: any) {
             alert(`API 호출 실패: ${e.message || "ANTHROPIC_API_KEY를 확인해주세요."}`);
