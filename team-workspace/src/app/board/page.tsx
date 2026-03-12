@@ -218,10 +218,10 @@ export default function BoardPage() {
                     createdAt: serverTimestamp(),
                 });
             } else {
-                alert(data.error || "회의록 생성 실패");
+                alert(`회의록 생성 실패: ${data.error || "알 수 없는 오류"}`);
             }
-        } catch {
-            alert("API 호출 실패. ANTHROPIC_API_KEY를 확인해주세요.");
+        } catch (e: any) {
+            alert(`API 호출 실패: ${e.message || "ANTHROPIC_API_KEY를 확인해주세요."}`);
         } finally {
             setGeneratingMinutes(false);
         }
