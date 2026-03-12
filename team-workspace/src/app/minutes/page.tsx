@@ -13,7 +13,7 @@ export default function MinutesPage() {
 
     useEffect(() => {
         const unsub = onSnapshot(
-            query(collection(db, "minutes"), orderBy("createdAt", "asc")),
+            query(collection(db, "minutes"), orderBy("createdAt", "desc")),
             (snap) => {
                 const data: Minutes[] = snap.docs.map((d) => ({
                     id: d.id,

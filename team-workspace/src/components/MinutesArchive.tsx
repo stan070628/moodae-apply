@@ -71,11 +71,14 @@ export default function MinutesArchive({ minutes, onUpdate, onDelete }: MinutesA
     return (
         <>
             <div className="space-y-6">
-                {Object.entries(grouped).sort(([, aList], [, bList]) => {
-                    const aMax = Math.max(...aList.map(m => new Date(m.createdAt).getTime()));
-                    const bMax = Math.max(...bList.map(m => new Date(m.createdAt).getTime()));
-                    return bMax - aMax;
-                }).map(([itemName, mList]) => (
+                {Object.entries(grouped)
+                    // 각 그룹의 첫 번째 항목(이미 최신순으로 정렬되어 들어옴)의 날짜를 비교하여 그룹 자체를 최신순으로 정렬
+                    .sort(([, aList], [, bList]) => {
+                        const aTime = aList[0] ? new Date(aList[0].createdAt).getTime() : 0;
+                        const bTime = bList[0] ? new Date(bList[0].createdAt).getTime() : 0;
+                        return bTime - aTime;
+                    })
+                    .map(([itemName, mList]) => (
                     <div key={itemName} className="animate-fade-in">
                         <h3 className="text-[16px] font-bold text-white flex items-center gap-2 mb-3">
                             <span className="text-zinc-500">#</span> {itemName}
@@ -84,7 +87,7 @@ export default function MinutesArchive({ minutes, onUpdate, onDelete }: MinutesA
                             </span>
                         </h3>
                         <div className="space-y-3">
-                            {mList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((m) => (
+                            {mList.map((m) => (
                                 <div
                                     key={m.id}
                                     id={`minute-${m.id}`}
