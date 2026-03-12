@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Minutes } from "@/lib/types";
 
 interface MinutesArchiveProps {
@@ -13,6 +13,22 @@ export default function MinutesArchive({ minutes, onUpdate, onDelete }: MinutesA
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editContent, setEditContent] = useState("");
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [highlightId, setHighlightId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const targetId = params.get("id");
+        if (targetId && minutes.length > 0) {
+            const el = document.getElementById(`minute-${targetId}`);
+            if (el) {
+                setTimeout(() => {
+                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+                    setHighlightId(targetId);
+                    setTimeout(() => setHighlightId(null), 3000); // 3초 후 하이라이트 해제
+                }, 100);
+            }
+        }
+    }, [minutes]);
 
     const startEdit = (m: Minutes) => {
         setEditingId(m.id);
@@ -71,7 +87,10 @@ export default function MinutesArchive({ minutes, onUpdate, onDelete }: MinutesA
                             {mList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((m) => (
                                 <div
                                     key={m.id}
-                                    className="group bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4"
+                                    id={`minute-${m.id}`}
+                                    className={`group bg-[var(--color-surface)] border rounded-xl p-4 transition-all duration-500
+                                        ${highlightId === m.id ? 'border-[var(--color-brand)] ring-2 ring-[var(--color-brand)]/50 bg-[var(--color-brand)]/5' : 'border-[var(--color-border)]'}
+                                    `}
                                 >
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="text-[13px] text-zinc-500">

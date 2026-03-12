@@ -26,6 +26,7 @@ export interface ChatMessage {
     author: string;
     text: string;
     time: string;
+    createdAt?: any; // Firestore Timestamp
     isSystem?: boolean;
     mentions?: string[];
     edited?: boolean;
