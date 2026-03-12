@@ -155,6 +155,11 @@ select {
   padding-right: 28px;
 }
 
+/* iOS Safe Area utilities */
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
 /* Brand monospace */
 .font-brand {
   font-family: "JetBrains Mono", "Fira Code", "SF Mono", monospace;

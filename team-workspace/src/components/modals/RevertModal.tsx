@@ -8,14 +8,15 @@ interface RevertModalProps {
     itemName: string;
     from: Status;
     to: Status;
+    currentNickname: string;
     onConfirm: (reason: string, by: string) => void;
     onCancel: () => void;
 }
 
-export default function RevertModal({ itemName, from, to, onConfirm, onCancel }: RevertModalProps) {
+export default function RevertModal({ itemName, from, to, currentNickname, onConfirm, onCancel }: RevertModalProps) {
     const { team } = useApp();
     const [reason, setReason] = useState("");
-    const [by, setBy] = useState("");
+    const [by, setBy] = useState(currentNickname);
 
     const statusLabel = (s: Status) => {
         switch (s) {

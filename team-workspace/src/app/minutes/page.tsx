@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { useState, useEffect, useCallback } from "react";
+import { collection, onSnapshot, query, orderBy, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import MinutesArchive from "@/components/MinutesArchive";
@@ -26,6 +26,14 @@ export default function MinutesPage() {
         return () => unsub();
     }, []);
 
+    const handleUpdateMinutes = useCallback((id: string, content: string) => {
+        updateDoc(doc(db, "minutes", id), { content });
+    }, []);
+
+    const handleDeleteMinutes = useCallback((id: string) => {
+        deleteDoc(doc(db, "minutes", id));
+    }, []);
+
     if (!ready) return (
         <div className="h-screen flex items-center justify-center bg-[#060608]">
             <div className="w-8 h-8 rounded-full border-2 border-[#6C5CE7]/20 border-t-[#6C5CE7] animate-spin" />
@@ -40,7 +48,11 @@ export default function MinutesPage() {
                     <h1 className="text-2xl font-bold text-white">📝 회의록 아카이브</h1>
                     <p className="text-[14px] text-zinc-500 mt-0.5">AI가 생성한 회의록 모아보기</p>
                 </div>
-                <MinutesArchive minutes={minutes} />
+                <MinutesArchive
+                    minutes={minutes}
+                    onUpdate={handleUpdateMinutes}
+                    onDelete={handleDeleteMinutes}
+                />
             </main>
         </div>
     );

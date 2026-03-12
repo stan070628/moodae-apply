@@ -1,7 +1,5 @@
 import { WBSItem } from "./types";
 
-export const TEAM = ["Stan", "Jay", "Mia"];
-
 export const CATEGORIES = [
     "비즈니스 개요",
     "플레이어 역할",

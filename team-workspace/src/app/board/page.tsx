@@ -115,7 +115,7 @@ export default function BoardPage() {
         addDoc(collection(db, "chats", String(itemId), "msgs"), {
             author: "시스템",
             text,
-            time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+            time: `${new Date().getMonth() + 1}/${new Date().getDate()} ${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`,
             isSystem: true,
             createdAt: serverTimestamp(),
         });
@@ -128,33 +128,46 @@ export default function BoardPage() {
             author,
             text,
             mentions,
-            time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+            time: `${new Date().getMonth() + 1}/${new Date().getDate()} ${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`,
             isSystem: false,
             createdAt: serverTimestamp(),
         });
-        // 멘션된 유저의 뱃지 카운트 증가 + 푸시 알림
+
+        const itemName = items.find((i) => i.id === selectedItemId)?.item || "";
+        const wbsRef = doc(db, "wbs", String(selectedItemId));
+
+        // chatCounts: 발신자 제외 전체 팀원 +1
+        const chatUpdate: Record<string, unknown> = {};
+        team.forEach((member) => {
+            if (member !== author) chatUpdate[`chatCounts.${member}`] = increment(1);
+        });
+        if (Object.keys(chatUpdate).length > 0) {
+            updateDoc(wbsRef, chatUpdate);
+        }
+
+        // mentionCounts: 멘션된 사람만 +1
         if (mentions.length > 0) {
-            const updateData: Record<string, unknown> = {};
+            const mentionUpdate: Record<string, unknown> = {};
             mentions.forEach((m) => {
                 if (m === "ALL") {
                     team.forEach((member) => {
-                        if (member !== author) updateData[`mentionCounts.${member}`] = increment(1);
+                        if (member !== author) mentionUpdate[`mentionCounts.${member}`] = increment(1);
                     });
                 } else if (m !== author) {
-                    updateData[`mentionCounts.${m}`] = increment(1);
+                    mentionUpdate[`mentionCounts.${m}`] = increment(1);
                 }
             });
-            if (Object.keys(updateData).length > 0) {
-                updateDoc(doc(db, "wbs", String(selectedItemId)), updateData);
+            if (Object.keys(mentionUpdate).length > 0) {
+                updateDoc(wbsRef, mentionUpdate);
             }
-            // 멘션 푸시 알림 전송
-            const itemName = items.find((i) => i.id === selectedItemId)?.item || "";
-            fetch("/api/notify", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mentions, senderName: author, itemName, text, itemId: selectedItemId }),
-            }).catch(() => {});
         }
+
+        // 푸시 알림: 항상 전체 팀원에게 전송
+        fetch("/api/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mentions, senderName: author, itemName, text, itemId: selectedItemId, notifyAll: mentions.length === 0 }),
+        }).catch(() => {});
     }, [selectedItemId, items, team]);
 
     // 채팅 메시지 편집
@@ -199,8 +212,9 @@ export default function BoardPage() {
                 await addDoc(collection(db, "chats", String(selectedItem.id), "msgs"), {
                     author: "시스템",
                     text: `회의록이 생성되었습니다. (${selectedMsgs.length}개 메시지 기반)`,
-                    time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+                    time: `${new Date().getMonth() + 1}/${new Date().getDate()} ${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`,
                     isSystem: true,
+                    minutesId: data.id,
                     createdAt: serverTimestamp(),
                 });
             } else {
@@ -242,10 +256,11 @@ export default function BoardPage() {
                             selectedItemId={selectedItemId}
                             setSelectedItemId={(id) => {
                                 setSelectedItemId(id);
-                                // 채널 진입 시 해당 유저의 멘션 카운트 초기화
+                                // 채널 진입 시 해당 유저의 멘션/채팅 카운트 초기화
                                 if (id && nickname) {
                                     updateDoc(doc(db, "wbs", String(id)), {
                                         [`mentionCounts.${nickname}`]: 0,
+                                        [`chatCounts.${nickname}`]: 0,
                                     }).catch(() => {});
                                 }
                             }}

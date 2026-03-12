@@ -12,23 +12,49 @@ firebase.initializeApp({
     appId: "1:695843332907:web:86612093575ac377e39b6e",
 });
 
+self.addEventListener("push", (event) => {
+    try {
+        const payload = event.data?.json();
+        const badgeStr = payload?.data?.badgeCount;
+        if (badgeStr && "setAppBadge" in self.navigator) {
+            const count = parseInt(badgeStr, 10);
+            if (count > 0) {
+                event.waitUntil(self.navigator.setAppBadge(count).catch(() => {}));
+            }
+        }
+    } catch (e) {
+        // ignore errors
+    }
+});
+
 const messaging = firebase.messaging();
 
-// 백그라운드 메시지 수신
 messaging.onBackgroundMessage((payload) => {
-    const { title, body } = payload.notification || {};
-    if (!title) return;
+    // badge 설정: try-catch 로 완전히 격리 — 실패해도 알림 표시에 영향 없음
+    try {
+        if ("setAppBadge" in self.navigator) {
+            self.navigator.setAppBadge(parseInt(payload.data?.badgeCount || "1", 10)).catch(() => {});
+        }
+    } catch (_) {}
+
+    const title = payload.data?.title || "IN-DIG Collab";
+    const body = payload.data?.body || "";
     self.registration.showNotification(title, {
-        body: body || "",
+        body,
         icon: "/icon-192.png",
         badge: "/icon-192.png",
         data: payload.data || {},
     });
 });
 
-// 알림 클릭 시 해당 URL로 이동
+// 알림 클릭 시 해당 URL로 이동 + 뱃지 초기화
 self.addEventListener("notificationclick", (event) => {
     event.notification.close();
+
+    if ("clearAppBadge" in self.navigator) {
+        self.navigator.clearAppBadge().catch(() => {});
+    }
+
     const url = event.notification.data?.url || "/board";
     event.waitUntil(
         clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {

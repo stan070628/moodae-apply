@@ -203,8 +203,11 @@ export default function ChatPage({
                             `}
                         >
                             {msg.isSystem ? (
-                                <div className="py-2 px-3 text-[13px] text-zinc-500 italic border border-dashed border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]/50 text-center">
-                                    🔔 {msg.text}
+                                <div
+                                    onClick={() => { if (msg.minutesId) window.location.href = "/minutes"; }}
+                                    className={`py-2 px-3 text-[13px] italic border border-dashed rounded-lg text-center transition-colors ${msg.minutesId ? "cursor-pointer text-[var(--color-brand)] border-[var(--color-brand)]/50 bg-[var(--color-brand)]/10 hover:bg-[var(--color-brand)]/20" : "text-zinc-500 border-[var(--color-border)] bg-[var(--color-surface)]/50"}`}
+                                >
+                                    🔔 {msg.text} {msg.minutesId && <span className="ml-1 opacity-70">↗</span>}
                                 </div>
                             ) : (
                                 <div className="flex gap-2.5">
@@ -307,20 +310,20 @@ export default function ChatPage({
             )}
 
             {/* Input */}
-            <div className="flex-shrink-0 border-t border-[var(--color-border)] p-3 pb-safe relative z-50">
-                {!selectMode && (
+            {!selectMode && (
+                <div className="flex-shrink-0 border-t border-[var(--color-border)] p-3 pb-safe relative z-50">
                     <button
                         onClick={() => setSelectMode(true)}
                         className="mb-2 text-[14px] text-zinc-500 hover:text-[var(--color-brand)] transition-colors"
                     >
                         📝 구간 선택
                     </button>
-                )}
-                <MentionInput
-                    nickname={nickname}
-                    onSend={(text, mentions) => onSendMessage(text, nickname, mentions)}
-                />
-            </div>
+                    <MentionInput
+                        nickname={nickname}
+                        onSend={(text, mentions) => onSendMessage(text, nickname, mentions)}
+                    />
+                </div>
+            )}
         </div>
     );
 }

@@ -5,7 +5,8 @@ import { useApp } from "@/components/AppProvider";
 
 export function extractMentions(text: string, team: string[]): string[] {
     const valid = new Set([...team, "ALL"]);
-    const matches = text.match(/@(\w+)/g) || [];
+    // \w는 ASCII만 매칭 — 한글 닉네임 지원을 위해 공백/@ 이외 문자로 변경
+    const matches = text.match(/@([^\s@]+)/g) || [];
     return matches.map((m) => m.slice(1)).filter((m) => valid.has(m));
 }
 
@@ -19,7 +20,7 @@ export default function MentionInput({ nickname, onSend }: MentionInputProps) {
     const mentionOptions = [...team, "ALL"];
     const [text, setText] = useState("");
     const [mentionSearch, setMentionSearch] = useState<string | null>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const handleChange = (value: string) => {
         setText(value);
@@ -48,6 +49,7 @@ export default function MentionInput({ nickname, onSend }: MentionInputProps) {
         onSend(text.trim(), mentions);
         setText("");
         setMentionSearch(null);
+        if (inputRef.current) inputRef.current.style.height = "auto";
     };
 
     const filtered =
@@ -56,7 +58,7 @@ export default function MentionInput({ nickname, onSend }: MentionInputProps) {
             : [];
 
     return (
-        <div className="relative flex gap-2 items-center">
+        <div className="relative flex gap-2 items-end">
             {/* 멘션 팝업 */}
             {filtered.length > 0 && (
                 <div className="absolute bottom-full left-10 mb-2 bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-xl shadow-xl overflow-hidden z-50 min-w-[140px]">
@@ -83,19 +85,23 @@ export default function MentionInput({ nickname, onSend }: MentionInputProps) {
             <span className="text-[14px] font-semibold text-[var(--color-brand)] bg-[var(--color-brand)]/10 px-2.5 py-2 rounded-lg border border-[var(--color-brand)]/20 flex-shrink-0">
                 {nickname}
             </span>
-            <input
+            <textarea
                 ref={inputRef}
                 value={text}
-                onChange={(e) => handleChange(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSend()}
+                rows={1}
+                onChange={(e) => {
+                    handleChange(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                }}
                 onBlur={() => setTimeout(() => setMentionSearch(null), 150)}
                 placeholder="메시지 입력... (@로 멘션)"
-                className="flex-1 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-[16px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[var(--color-brand)]"
+                className="flex-1 min-w-0 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-[16px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[var(--color-brand)] resize-none overflow-hidden"
             />
             <button
                 onClick={handleSend}
                 disabled={!text.trim()}
-                className="px-4 py-2.5 rounded-lg bg-[var(--color-brand)] text-white text-[15px] font-medium hover:bg-[var(--color-brand)]/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+                className="flex-shrink-0 px-4 py-2.5 rounded-lg bg-[var(--color-brand)] text-white text-[15px] font-medium hover:bg-[var(--color-brand)]/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
             >
                 전송
             </button>

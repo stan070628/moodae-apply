@@ -48,6 +48,19 @@ export default function AppProvider({ children }: { children: ReactNode }) {
         setMounted(true);
     }, []);
 
+    // 앱 열리거나 포그라운드 전환 시 아이콘 뱃지 초기화
+    useEffect(() => {
+        const clearBadge = () => {
+            if ("clearAppBadge" in navigator) {
+                navigator.clearAppBadge().catch(() => {});
+            }
+        };
+        clearBadge(); // 최초 진입 시
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") clearBadge();
+        });
+    }, []);
+
     // 팀원 목록 실시간 구독
     useEffect(() => {
         const unsub = onSnapshot(collection(db, "users"), (snap) => {
