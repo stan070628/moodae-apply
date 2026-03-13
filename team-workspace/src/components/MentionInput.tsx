@@ -13,9 +13,10 @@ export function extractMentions(text: string, team: string[]): string[] {
 interface MentionInputProps {
     nickname: string;
     onSend: (text: string, mentions: string[]) => void;
+    enterToSend?: boolean;
 }
 
-export default function MentionInput({ nickname, onSend }: MentionInputProps) {
+export default function MentionInput({ nickname, onSend, enterToSend = false }: MentionInputProps) {
     const { team } = useApp();
     const mentionOptions = [...team, "ALL"];
     const [text, setText] = useState("");
@@ -93,6 +94,12 @@ export default function MentionInput({ nickname, onSend }: MentionInputProps) {
                     handleChange(e.target.value);
                     e.target.style.height = "auto";
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                }}
+                onKeyDown={(e) => {
+                    if (enterToSend && e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                    }
                 }}
                 onBlur={() => setTimeout(() => setMentionSearch(null), 150)}
                 placeholder="메시지 입력... (@로 멘션)"

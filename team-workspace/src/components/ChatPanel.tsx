@@ -266,6 +266,7 @@ export default function ChatPanel({
                     <MentionInput
                         nickname={nickname}
                         onSend={(text, mentions) => onSendMessage(text, nickname, mentions)}
+                        enterToSend
                     />
                 </div>
             )}
