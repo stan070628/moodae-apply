@@ -165,8 +165,8 @@ export default function ChatPanel({
                                         <div className="flex items-baseline gap-2 mb-0.5">
                                             <span className="text-[15px] font-semibold text-zinc-200">{msg.author}</span>
                                                 <span className="text-[12px] text-zinc-500">
-                                                    {msg.createdAt?.seconds
-                                                        ? formatDateTime(new Date(msg.createdAt.seconds * 1000))
+                                                    {msg.createdAt
+                                                        ? formatDateTime(typeof msg.createdAt.toMillis === "function" ? new Date(msg.createdAt.toMillis()) : new Date(msg.createdAt.seconds * 1000))
                                                         : msg.time || ""}
                                                 </span>
                                             {msg.edited && <span className="text-[11px] text-zinc-600 italic">수정됨</span>}
