@@ -22,6 +22,7 @@ export default function MentionInput({ nickname, onSend, enterToSend = false }: 
     const [text, setText] = useState("");
     const [mentionSearch, setMentionSearch] = useState<string | null>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const composingRef = useRef(false);
 
     const handleChange = (value: string) => {
         setText(value);
@@ -95,8 +96,10 @@ export default function MentionInput({ nickname, onSend, enterToSend = false }: 
                     e.target.style.height = "auto";
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
                 }}
+                onCompositionStart={() => { composingRef.current = true; }}
+                onCompositionEnd={() => { composingRef.current = false; }}
                 onKeyDown={(e) => {
-                    if (enterToSend && e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    if (enterToSend && e.key === "Enter" && !e.shiftKey && !composingRef.current) {
                         e.preventDefault();
                         handleSend();
                     }
