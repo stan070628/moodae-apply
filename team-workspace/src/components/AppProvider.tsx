@@ -55,11 +55,32 @@ export default function AppProvider({ children }: { children: ReactNode }) {
                 navigator.clearAppBadge().catch(() => {});
             }
         };
-        clearBadge(); // 최초 진입 시
+        clearBadge();
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "visible") clearBadge();
         });
     }, []);
+
+    // WBS 미읽음 카운트 → 앱 아이콘 뱃지
+    useEffect(() => {
+        if (!nickname) return;
+        const unsub = onSnapshot(collection(db, "wbs"), (snap) => {
+            let total = 0;
+            snap.docs.forEach((d) => {
+                const data = d.data();
+                total += (data.chatCounts?.[nickname] || 0);
+                total += (data.mentionCounts?.[nickname] || 0);
+            });
+            if ("setAppBadge" in navigator) {
+                if (total > 0) {
+                    (navigator as any).setAppBadge(total).catch(() => {});
+                } else {
+                    (navigator as any).clearAppBadge().catch(() => {});
+                }
+            }
+        });
+        return () => unsub();
+    }, [nickname]);
 
     // 팀원 목록 실시간 구독
     useEffect(() => {
