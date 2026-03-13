@@ -96,7 +96,7 @@ export default function MentionInput({ nickname, onSend, enterToSend = false }: 
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
                 }}
                 onKeyDown={(e) => {
-                    if (enterToSend && e.key === "Enter" && !e.shiftKey) {
+                    if (enterToSend && e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                         e.preventDefault();
                         handleSend();
                     }
