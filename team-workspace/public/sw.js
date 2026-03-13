@@ -1,4 +1,4 @@
-const CACHE_NAME = "indig-collab-v4";
+const CACHE_NAME = "indig-collab-v5";
 const STATIC_ASSETS = [
     "/",
     "/board",
@@ -35,6 +35,24 @@ self.addEventListener("fetch", (event) => {
     // API calls: network only
     if (request.url.includes("/api/")) return;
 
+    // HTML pages: network-first (ensures latest deployment is served)
+    const isNavigation = request.mode === "navigate" || request.headers.get("accept")?.includes("text/html");
+    if (isNavigation) {
+        event.respondWith(
+            fetch(request)
+                .then((response) => {
+                    if (response.ok) {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                    }
+                    return response;
+                })
+                .catch(() => caches.match(request))
+        );
+        return;
+    }
+
+    // Static assets: cache-first
     event.respondWith(
         caches.match(request).then((cached) => {
             const fetchPromise = fetch(request)
