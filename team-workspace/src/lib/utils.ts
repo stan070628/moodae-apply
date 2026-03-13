@@ -27,12 +27,14 @@ export function formatDate(date: string | Date): string {
 
 export function formatDateTime(date: string | Date): string {
     const d = typeof date === "string" ? new Date(date) : date;
-    return d.toLocaleString("ko-KR", {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
+    if (isNaN(d.getTime())) return "";
+    const M = d.getMonth() + 1;
+    const D = d.getDate();
+    const h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2, "0");
+    const ampm = h >= 12 ? "오후" : "오전";
+    const h12 = h % 12 || 12;
+    return `${M}/${D} ${ampm} ${h12}:${m}`;
 }
 
 export function statusLabel(status: string): string {

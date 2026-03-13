@@ -167,7 +167,7 @@ export default function ChatPanel({
                                                 <span className="text-[12px] text-zinc-500">
                                                     {msg.createdAt?.seconds
                                                         ? formatDateTime(new Date(msg.createdAt.seconds * 1000))
-                                                        : formatDateTime(msg.time || new Date())}
+                                                        : msg.time || ""}
                                                 </span>
                                             {msg.edited && <span className="text-[11px] text-zinc-600 italic">수정됨</span>}
                                             {isMentioned && <span className="text-[11px] text-[#A855F7] font-medium">멘션됨</span>}
