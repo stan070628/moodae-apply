@@ -7,6 +7,14 @@ import NicknameModal from "@/components/modals/NicknameModal";
 import InstallBanner from "@/components/InstallBanner";
 import { useFCM } from "@/lib/useFCM";
 
+export interface UnreadItem {
+    id: number;
+    item: string;
+    cat: string;
+    chatCount: number;
+    mentionCount: number;
+}
+
 interface AppContextType {
     nickname: string;
     setNickname: (name: string) => void;
@@ -14,6 +22,7 @@ interface AppContextType {
     pushEnabled: boolean;
     requestPush: () => Promise<void>;
     disablePush: () => Promise<void>;
+    unreadItems: UnreadItem[];
 }
 
 const AppContext = createContext<AppContextType>({
@@ -23,6 +32,7 @@ const AppContext = createContext<AppContextType>({
     pushEnabled: false,
     requestPush: async () => { },
     disablePush: async () => { },
+    unreadItems: [],
 });
 
 export function useApp() {
@@ -36,6 +46,7 @@ function registerUser(name: string) {
 export default function AppProvider({ children }: { children: ReactNode }) {
     const [nickname, setNicknameState] = useState<string>("");
     const [team, setTeam] = useState<string[]>([]);
+    const [unreadItems, setUnreadItems] = useState<UnreadItem[]>([]);
     const [mounted, setMounted] = useState(false);
     const { pushEnabled, requestPush, disablePush } = useFCM(nickname);
 
@@ -61,16 +72,22 @@ export default function AppProvider({ children }: { children: ReactNode }) {
         });
     }, []);
 
-    // WBS 미읽음 카운트 → 앱 아이콘 뱃지
+    // WBS 미읽음 카운트 → 앱 아이콘 뱃지 + unreadItems 목록
     useEffect(() => {
         if (!nickname) return;
         const unsub = onSnapshot(collection(db, "wbs"), (snap) => {
             let total = 0;
+            const unread: UnreadItem[] = [];
             snap.docs.forEach((d) => {
                 const data = d.data();
-                total += (data.chatCounts?.[nickname] || 0);
-                total += (data.mentionCounts?.[nickname] || 0);
+                const chatCount = data.chatCounts?.[nickname] || 0;
+                const mentionCount = data.mentionCounts?.[nickname] || 0;
+                total += chatCount + mentionCount;
+                if (chatCount > 0 || mentionCount > 0) {
+                    unread.push({ id: data.id, item: data.item, cat: data.cat, chatCount, mentionCount });
+                }
             });
+            setUnreadItems(unread.sort((a, b) => (b.chatCount + b.mentionCount) - (a.chatCount + a.mentionCount)));
             if ("setAppBadge" in navigator) {
                 if (total > 0) {
                     (navigator as any).setAppBadge(total).catch(() => {});
@@ -100,7 +117,7 @@ export default function AppProvider({ children }: { children: ReactNode }) {
     if (!mounted) return null;
 
     return (
-        <AppContext.Provider value={{ nickname, setNickname, team, pushEnabled, requestPush, disablePush }}>
+        <AppContext.Provider value={{ nickname, setNickname, team, pushEnabled, requestPush, disablePush, unreadItems }}>
             {!nickname && <NicknameModal onSave={setNickname} />}
             {children}
             <InstallBanner />

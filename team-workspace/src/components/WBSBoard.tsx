@@ -35,6 +35,7 @@ export default function WBSBoard({
     const { team } = useApp();
     const [filterCat, setFilterCat] = useState<string>("all");
     const [filterStatus, setFilterStatus] = useState<string>("all");
+    const [filterUnread, setFilterUnread] = useState(false);
     const [revertPending, setRevertPending] = useState<{ itemId: number; to: Status } | null>(null);
     const [historyItemId, setHistoryItemId] = useState<number | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -46,8 +47,11 @@ export default function WBSBoard({
     const filtered = items.filter((i) => {
         if (filterCat !== "all" && i.cat !== filterCat) return false;
         if (filterStatus !== "all" && i.status !== filterStatus) return false;
+        if (filterUnread && (i.chatCounts?.[nickname] ?? 0) === 0 && (i.mentionCounts?.[nickname] ?? 0) === 0) return false;
         return true;
     });
+
+    const totalUnread = items.reduce((sum, i) => sum + (i.chatCounts?.[nickname] ?? 0) + (i.mentionCounts?.[nickname] ?? 0), 0);
 
     const STATUS_ORDER: Record<string, number> = { confirmed: 0, discussion: 1, unconfirmed: 2 };
 
@@ -167,6 +171,18 @@ export default function WBSBoard({
                     <option value="unconfirmed">미확정</option>
                     <option value="discussion">논의필요</option>
                 </select>
+
+                <button
+                    onClick={() => setFilterUnread((v) => !v)}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-[14px] rounded-lg border transition-colors font-medium min-h-[44px] ${filterUnread ? "bg-red-500/15 text-red-400 border-red-500/30" : "bg-[var(--color-surface)] border-[var(--color-border)] text-zinc-400 hover:text-zinc-200"}`}
+                >
+                    🔔 미읽음만
+                    {totalUnread > 0 && (
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-bold ${filterUnread ? "bg-red-500/30 text-red-300" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}>
+                            {totalUnread}
+                        </span>
+                    )}
+                </button>
 
                 <div className="flex-1" />
 
