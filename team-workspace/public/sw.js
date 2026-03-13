@@ -1,4 +1,4 @@
-const CACHE_NAME = "indig-collab-v5";
+const CACHE_NAME = "indig-collab-v6";
 const STATIC_ASSETS = [
     "/",
     "/board",
@@ -34,6 +34,9 @@ self.addEventListener("fetch", (event) => {
 
     // API calls: network only
     if (request.url.includes("/api/")) return;
+
+    // Next.js JS chunks: network only (content-hashed, no need to cache; prevents stale chunk 404s)
+    if (request.url.includes("/_next/static/chunks/") || request.url.includes("/_next/static/css/")) return;
 
     // HTML pages: network-first (ensures latest deployment is served)
     const isNavigation = request.mode === "navigate" || request.headers.get("accept")?.includes("text/html");
