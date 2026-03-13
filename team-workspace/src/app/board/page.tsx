@@ -12,6 +12,7 @@ import ChatPanel from "@/components/ChatPanel";
 import ChatPage from "@/components/ChatPage";
 import { INITIAL_WBS } from "@/lib/data";
 import { useApp } from "@/components/AppProvider";
+import { formatDateTime } from "@/lib/utils";
 import type { WBSItem, ChatMessage, Minutes, Status } from "@/lib/types";
 
 export default function BoardPage() {
@@ -115,7 +116,7 @@ export default function BoardPage() {
         addDoc(collection(db, "chats", String(itemId), "msgs"), {
             author: "시스템",
             text,
-            time: `${new Date().getMonth() + 1}/${new Date().getDate()} ${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`,
+            time: formatDateTime(new Date()),
             isSystem: true,
             createdAt: serverTimestamp(),
         });
@@ -128,7 +129,7 @@ export default function BoardPage() {
             author,
             text,
             mentions,
-            time: `${new Date().getMonth() + 1}/${new Date().getDate()} ${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`,
+            time: formatDateTime(new Date()),
             isSystem: false,
             createdAt: serverTimestamp(),
         });
@@ -212,7 +213,7 @@ export default function BoardPage() {
                 await addDoc(collection(db, "chats", String(selectedItem.id), "msgs"), {
                     author: "시스템",
                     text: `회의록이 생성되었습니다. (${selectedMsgs.length}개 메시지 기반)`,
-                    time: `${new Date().getMonth() + 1}/${new Date().getDate()} ${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`,
+                    time: formatDateTime(new Date()),
                     isSystem: true,
                     minutesId: data.id,
                     createdAt: serverTimestamp(),
