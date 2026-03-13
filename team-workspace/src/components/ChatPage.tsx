@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { ChatMessage, WBSItem, Minutes, Status } from "@/lib/types";
-import { statusLabel, statusColor, dDayLabel, dDayColor, formatDateTime } from "@/lib/utils";
+import { statusLabel, statusColor, dDayLabel, dDayColor, formatTimestamp } from "@/lib/utils";
 import { useApp } from "@/components/AppProvider";
 import MentionInput from "@/components/MentionInput";
 import PinnedMemo from "@/components/PinnedMemo";
@@ -225,9 +225,7 @@ export default function ChatPage({
                                         <div className="flex items-baseline gap-2 mb-0.5">
                                             <span className="text-[15px] font-semibold text-zinc-200">{msg.author}</span>
                                             <span className="text-[13px] text-zinc-500">
-                                                {msg.createdAt
-                                                    ? formatDateTime(typeof msg.createdAt.toMillis === "function" ? new Date(msg.createdAt.toMillis()) : new Date(msg.createdAt.seconds * 1000))
-                                                    : msg.time || ""}
+                                                {formatTimestamp(msg.createdAt, msg.time || "")}
                                             </span>
                                             {msg.edited && <span className="text-[11px] text-zinc-600 italic">수정됨</span>}
                                             {isMentioned && <span className="text-[11px] text-[#A855F7] font-medium">멘션됨</span>}

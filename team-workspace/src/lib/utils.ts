@@ -25,6 +25,17 @@ export function formatDate(date: string | Date): string {
     return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
 }
 
+// Firestore Timestamp, JS Date, seconds 객체 등 모든 형식 처리
+export function formatTimestamp(createdAt: any, fallback: string): string {
+    if (!createdAt) return fallback;
+    try {
+        if (typeof createdAt.toMillis === "function") return formatDateTime(new Date(createdAt.toMillis()));
+        if (typeof createdAt.seconds === "number") return formatDateTime(new Date(createdAt.seconds * 1000));
+        if (createdAt instanceof Date) return formatDateTime(createdAt);
+    } catch {}
+    return fallback;
+}
+
 export function formatDateTime(date: string | Date): string {
     const d = typeof date === "string" ? new Date(date) : date;
     if (isNaN(d.getTime())) return "";
