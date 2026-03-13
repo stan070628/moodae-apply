@@ -27,12 +27,13 @@ export function formatDate(date: string | Date): string {
 
 // Firestore Timestamp, JS Date, seconds 객체 등 모든 형식 처리
 export function formatTimestamp(createdAt: any, fallback: string): string {
+    console.log("[DEBUG] createdAt:", createdAt, "type:", typeof createdAt, "keys:", createdAt ? Object.keys(createdAt) : null);
     if (!createdAt) return fallback;
     try {
         if (typeof createdAt.toMillis === "function") return formatDateTime(new Date(createdAt.toMillis()));
         if (typeof createdAt.seconds === "number") return formatDateTime(new Date(createdAt.seconds * 1000));
         if (createdAt instanceof Date) return formatDateTime(createdAt);
-    } catch {}
+    } catch (e) { console.log("[DEBUG] error:", e); }
     return fallback;
 }
 
